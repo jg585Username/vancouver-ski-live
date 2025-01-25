@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Ski Vancouver Status</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: url("images/whistler_blackcomb.jpeg") no-repeat center center fixed;
+            background-size: cover;
+            background-color: #333; /* fallback */
+            color: #fff;           /* default text color */
+        }
+
+        /* ================ NAV BAR  ================ */
+        header {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+        }
+        nav a:hover {
+            color: #ddd;
+        }
+
+        /* ================ MAIN CONTENT  ================ */
+        main {
+            margin-top: 80px; /* space below fixed header */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 2rem;
+        }
+        .translucent-panel {
+            max-width: 900px;
+            width: 90%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.6);
+            margin-bottom: 2rem;
+        }
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #ccc;
+            margin: 0.5rem 0 1.5rem;
+        }
+
+        /* ================ LIFT BOXES ================ */
+        .lift-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .lift-box {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+            width: 200px;
+            text-align: center;
+            color: #333;
+        }
+        .lift-box h2 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+        }
+        .status {
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+        }
+        .status.open {
+            color: green;
+        }
+        .status.closed {
+            color: red;
+        }
+
+        /* ================ LOGO GALLERY ================ */
+        .logo-gallery {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .logo-container {
+            width: 150px;
+            height: 150px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .logo-container:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        .logo-container img {
+            width: 100px;
+            height: auto;
+        }
+
+        /* ================ WEATHER TABLE ================ */
+        .weather-table-wrapper {
+            margin-top: 1rem;
+            /* Let’s keep any overflow of wide tables from breaking layout: */
+            overflow-x: auto;
+        }
+        .weather-table {
+            /* Use separate collapse to control row spacing: */
+            border-collapse: separate;
+            border-spacing: 0 12px; /* 12px vertical gap between rows */
+            width: 100%;
+            font-size: 1rem;
+        }
+        /* Table Head */
+        .weather-table thead tr {
+            background-color: rgba(0,0,0,0.3);
+        }
+        .weather-table th {
+            text-align: left;
+            font-weight: 600;
+            padding: 8px 12px;
+            white-space: nowrap; /* Keep headings on one line if possible */
+            color: #fff;         /* White text for the header row */
+        }
+        /* Table Body Rows - white, “card” style */
+        .weather-table tbody tr {
+            background-color: #fff;  /* White card */
+            color: #333;
+            border-radius: 8px;
+            /* Because some browsers won't clip border-radius on TR directly,
+               we do a little trick below (see the "td:first-child" corners). */
+        }
+        .weather-table td {
+            padding: 12px;
+            vertical-align: middle;
+        }
+        /* If you want to handle corner rounding explicitly: */
+        .weather-table tbody tr td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        .weather-table tbody tr td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        /* Style for bigger numbers or sub-styles: */
+        .big-number {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        .resort-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: block;
+        }
+        .time-ago {
+            font-size: 0.85rem;
+            color: #677a8c;
+            margin-top: 4px;
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+            .translucent-panel {
+                padding: 1rem;
+                margin: 1rem;
+            }
+            .logo-gallery {
+                gap: 1.5rem;
+            }
+            .logo-container {
+                width: 120px;
+                height: 120px;
+            }
+            .logo-container img {
+                width: 80px;
+            }
+            /* Let the table scroll horizontally on small screens */
+            .weather-table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="navbar-brand">SKI VANCOUVER</div>
+    <nav>
+        <ul>
+            <li><a href="index.html">HOME</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="about.html">ABOUT</a></li>
+            <li><a href="contact.html">CONTACT</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <!-- Lifts Panel -->
+    <div class="translucent-panel">
+        <h1>Ski Vancouver Live Status</h1>
+        <p class="subtitle">
+            - Click logos to see lift and individual run status -
+        </p>
+        <div class="logo-gallery">
+            <div class="logo-container" id="cypressLogoContainer">
+                <img src="images/cypress_logo.svg" alt="Cypress Mountain"/>
+            </div>
+            <div class="logo-container" id="grouseLogoContainer">
+                <img src="images/grouse_logo.svg" alt="Grouse Mountain"/>
+            </div>
+            <div class="logo-container" id="seymourLogoContainer">
+                <img src="images/seymour_logo.svg" alt="Seymour Mountain"/>
+            </div>
+        </div>
+        <div class="lift-container" id="liftContainer"></div>
+    </div>
+
+    <!-- Weather & Snow Panel -->
+    <div class="translucent-panel">
+        <h2>Weather &amp; Snow Info</h2>
+        <div id="weatherContainer"></div>
+    </div>
+</main>
+
+<script>
+    const liftContainer = document.getElementById('liftContainer');
+
+    function displayLifts(lifts) {
+        liftContainer.innerHTML = '';
+        lifts.forEach(lift => {
+            const div = document.createElement('div');
+            div.classList.add('lift-box');
+
+            const nameEl = document.createElement('h2');
+            nameEl.textContent = lift.name;
+            div.appendChild(nameEl);
+
+            const statusEl = document.createElement('div');
+            statusEl.classList.add('status');
+            statusEl.textContent = lift.status;
+            if (lift.status && lift.status.toLowerCase().includes('open')) {
+                statusEl.classList.add('open');
+            } else {
+                statusEl.classList.add('closed');
+            }
+            div.appendChild(statusEl);
+
+            // If a Seymour "rawHours" is available
+            if (lift.rawHours) {
+                const hoursEl = document.createElement('p');
+                hoursEl.textContent = `Hours: ${lift.rawHours}`;
+                div.appendChild(hoursEl);
+            }
+
+            liftContainer.appendChild(div);
+        });
+    }
+
+    async function fetchCypress() {
+        try {
+            const response = await fetch('/api/cypress-lifts');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            displayLifts(data.lifts);
+        } catch (error) {
+            liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
+            console.error('Fetch Cypress Error:', error);
+        }
+    }
+
+    async function fetchGrouse() {
+        try {
+            const response = await fetch('/api/grouse-lifts');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            displayLifts(data.lifts);
+        } catch (error) {
+            liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
+            console.error('Fetch Grouse Error:', error);
+        }
+    }
+
+    async function fetchSeymour() {
+        try {
+            const response = await fetch('/api/seymour-lifts');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            displayLifts(data.lifts);
+        } catch (error) {
+            liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
+            console.error('Fetch Seymour Error:', error);
+        }
+    }
+
+    document.getElementById('cypressLogoContainer').addEventListener('click', fetchCypress);
+    document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
+    document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
+
+    async function fetchWeather() {
+        const container = document.getElementById('weatherContainer');
+        container.innerHTML = `<p>Loading weather data...</p>`;
+        try {
+            const response = await fetch('/api/weather');
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            displayWeatherInfo(data.weather || []);
+        } catch (err) {
+            container.innerHTML = `<p class="status closed">Error loading weather information.</p>`;
+            console.error('Fetch Weather Error:', err);
+        }
+    }
+
+    function displayWeatherInfo(weatherData) {
+        // Filter out Whistler if needed
+        const filtered = weatherData.filter(r => !r.name.toLowerCase().includes('whistler'));
+
+        const container = document.getElementById('weatherContainer');
+        container.innerHTML = '';
+
+        if (!filtered.length) {
+            container.innerHTML = `<p>No weather data available.</p>`;
+            return;
+        }
+
+        // Table wrapper
+        const tableWrapper = document.createElement('div');
+        tableWrapper.classList.add('weather-table-wrapper');
+
+        // Create table
+        const table = document.createElement('table');
+        table.classList.add('weather-table');
+
+        // Thead
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+      <tr>
+        <th>Resort</th>
+        <th>24h Snow</th>
+        <th>Base Depth</th>
+        <th>Conditions</th>
+        <th>Open Trails</th>
+        <th>Open Lifts</th>
+      </tr>
+    `;
+        table.appendChild(thead);
+
+        // Tbody
+        const tbody = document.createElement('tbody');
+
+        filtered.forEach(resort => {
+            // If you have something like "3 hours ago" info:
+            const timeAgo = resort.timeAgo ? `${resort.timeAgo} ago` : '';
+
+            const tr = document.createElement('tr');
+
+            // Resort name cell
+            const nameTd = document.createElement('td');
+            nameTd.innerHTML = `
+        <span class="resort-name">${resort.name}</span>
+        <span class="time-ago">${timeAgo}</span>
+      `;
+            tr.appendChild(nameTd);
+
+            // 24h Snow cell
+            const snowTd = document.createElement('td');
+            const snow24 = resort.snow24 > 0 ? `${resort.snow24}"` : `0"`;
+            snowTd.innerHTML = `<span class="big-number">${snow24}</span>`;
+            tr.appendChild(snowTd);
+
+            // Base Depth cell
+            const baseTd = document.createElement('td');
+            const base = resort.baseDepthRange || `${resort.baseDepth}"`;
+            baseTd.innerHTML = `<span class="big-number">${base}</span>`;
+            tr.appendChild(baseTd);
+
+            // Conditions cell
+            const condTd = document.createElement('td');
+            condTd.textContent = resort.conditions || '—';
+            tr.appendChild(condTd);
+
+            // Open Trails cell
+            const trailsTd = document.createElement('td');
+            trailsTd.innerHTML = `
+        ${resort.openTrails} / ${resort.totalTrails}
+        <br><span style="color:#677a8c; font-size:0.85rem;">
+          ${resort.trailPercentageOpen || ''}
+        </span>
+      `;
+            tr.appendChild(trailsTd);
+
+            // Open Lifts cell
+            const liftsTd = document.createElement('td');
+            liftsTd.textContent = `${resort.openLifts} / ${resort.totalLifts}`;
+            tr.appendChild(liftsTd);
+
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        tableWrapper.appendChild(table);
+        container.appendChild(tableWrapper);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        fetchWeather();
+    });
+</script>
+</body>
+</html>
+
+
+
+

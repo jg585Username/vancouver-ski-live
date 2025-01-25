@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>About - Ski Vancouver</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; /* Remove default margin to accommodate fixed header */
+      padding-top: 80px; /* Space for fixed header */
+      background: url("images/whistler_blackcomb.jpeg") no-repeat center center fixed;
+      background-size: cover;   /* Cover the entire screen */
+      background-color: #333;
+    }
+
+    /* ================ NAV BAR  ================ */
+    header {
+      background-color: #2c3e50; /* Dark background for nav bar */
+      color: #fff;
+      padding: 0.5rem 1rem;     /* Top/bottom and left/right space */
+      display: flex;            /* Flex layout to space out items */
+      align-items: center;      /* Vertically center items */
+      justify-content: space-between; /* Brand on left, menu on right */
+      position: fixed;          /* Fix the header at the top */
+      width: 100%;
+      top: 0;
+      z-index: 1000;            /* Ensure it stays above other elements */
+    }
+
+    .navbar-brand {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem; /* Horizontal spacing between menu items */
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #fff;
+      font-size: 1rem;
+      transition: color 0.3s ease;
+    }
+
+    nav a:hover {
+      color: #ddd; /* A lighter color on hover */
+    }
+
+    main {
+      /* Ensure there's space below the fixed header */
+      display: flex;
+      flex-direction: column; /* Stack panels vertically */
+      align-items: center;    /* Center panels horizontally */
+      padding-bottom: 2rem;   /* Space at the bottom of the page */
+    }
+
+    .translucent-panel {
+      max-width: 900px;
+      width: 90%;
+      background-color: rgba(0, 0, 0, 0.5); /* Black with 50% opacity */
+      color: #fff;            /* Text in white for contrast */
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+      margin-bottom: 2rem;    /* Space between panels */
+    }
+
+    h1 {
+      text-align: center;
+      color: #fff; /* Ensure heading color contrasts with background */
+    }
+
+    a {
+      color: #fff; /* Ensure link color contrasts with background */
+    }
+  </style>
+</head>
+<body>
+<!-- Nav Bar -->
+<header>
+  <!-- Left: brand or logo text -->
+  <div class="navbar-brand">SKI VANCOUVER</div>
+
+  <!-- Right: simple menu with links. Replace # with real sections or pages as needed. -->
+  <nav>
+    <ul>
+      <li><a href="index.html">HOME</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="about.html">ABOUT</a></li>
+      <li><a href="contact.html">CONTACT</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- Main Content -->
+<main>
+  <div class="translucent-panel">
+    <h1>About</h1>
+    <p>
+      This site provides live status updates for Cypress, Grouse, and Mt. Seymour,
+      using data scraped from their official websites. The site also provides an analysis of price and accessibility overview and other relevant information for a skiing trip.</a>
+    </p>
+
+    <!-- Optionally add a link back to home -->
+    <p>
+      <a href="index.html">Back to Home</a>
+    </p>
+  </div>
+</main>
+</body>
+</html>
