@@ -141,7 +141,6 @@ async function getWeather() {
                 snow48: resort?.snow?.last48 ?? 0,
 
                 // "base" may often be null, while "summit" has a value.
-                // Adjust according to which depth you consider the “base depth.”
                 baseDepth: resort?.snow?.base ?? 0,
 
                 openTrails: resort?.runs?.open ?? 0,
