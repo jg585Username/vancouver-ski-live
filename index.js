@@ -1,3 +1,5 @@
+//TODO: Make weather bar better and fix nav bar sizing
+
 const axios = require('axios');
 const cheerio = require('cheerio');
 const express = require('express');
