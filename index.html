@@ -412,13 +412,13 @@
 
             // 24h Snow cell
             const snowTd = document.createElement('td');
-            const snow24 = resort.snow24 > 0 ? `${resort.snow24}"` : `0"`;
+            const snow24 = resort.snow24 > 0 ? `${resort.snow24}"` : `0 cm`;
             snowTd.innerHTML = `<span class="big-number">${snow24}</span>`;
             tr.appendChild(snowTd);
 
             // Base Depth cell
             const baseTd = document.createElement('td');
-            const base = resort.baseDepthRange || `${resort.baseDepth}"`;
+            const base = resort.baseDepthRange || `${resort.baseDepth} cm`;
             baseTd.innerHTML = `<span class="big-number">${base}</span>`;
             tr.appendChild(baseTd);
 
