@@ -136,11 +136,10 @@ async function getWeather() {
         // Map over each resort, pulling out the fields you need
         const results = resortsData.map((resort) => {
             return {
-                name: resort.title, // e.g., "Cypress Mountain"
+                name: resort.title,
                 snow24: resort?.snow?.last24 ?? 0,
                 snow48: resort?.snow?.last48 ?? 0,
 
-                // "base" may often be null, while "summit" has a value.
                 baseDepth: resort?.snow?.base ?? 0,
 
                 openTrails: resort?.runs?.open ?? 0,
