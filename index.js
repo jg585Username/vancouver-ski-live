@@ -159,6 +159,20 @@ async function getWeather() {
         return [];
     }
 }
+
+async function scrapeCypressBaseDepth() {
+    try {
+        const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
+        const { data } = await axios.get(url);
+        const cm = data?.base?.centimeters ?? null; // or 0 if you prefer
+        return cm; // or return { centimeters: cm };
+
+    } catch (err) {
+        console.error("Error scraping Cypress base depth:", err);
+        return null;
+    }
+}
+
 /**
  * 4) Express endpoints
  *
