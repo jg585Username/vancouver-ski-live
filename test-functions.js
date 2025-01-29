@@ -50,9 +50,10 @@ async function scrapeCypressBaseDepth() {
         const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
         const { data } = await axios.get(url);
 
+        // Safely access the property using optional chaining:
         const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
-        console.log(data)
-        return cm; // or return { centimeters: cm };
+
+        return cm; // e.g., "173"
     } catch (err) {
         console.error("Error scraping Cypress base depth:", err);
         return null;
