@@ -44,3 +44,29 @@ async function getWeather() {
 getWeather().then((weatherData) => {
     console.log("Weather Data:", weatherData);
 });
+
+async function scrapeCypressBaseDepth() {
+    try {
+        const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
+        const { data } = await axios.get(url);
+
+        // The JSON includes:
+        // "snowSeasonTotalLabel": "Snow Season Total",
+        // "base": {
+        //   "inches": "68",
+        //   "centimeters": "173"
+        // }
+
+        // If that snippet sits directly on data, you can access data.base.centimeters:
+        // Adjust if the path is slightly different.
+        // For example, if it's inside data.snowSeason, or data.snowConditions, etc.
+        // Check the actual structure by console.log(data).
+
+        const cm = data?.base?.centimeters ?? null; // or 0 if you prefer
+
+        return cm; // or return { centimeters: cm };
+    } catch (err) {
+        console.error("Error scraping Cypress base depth:", err);
+        return null;
+    }
+}
