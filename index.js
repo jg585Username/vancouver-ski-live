@@ -160,19 +160,6 @@ async function getWeather() {
     }
 }
 
-async function scrapeCypressBaseDepth() {
-    try {
-        const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
-        const { data } = await axios.get(url);
-        const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
-        return cm; // or return { centimeters: cm };
-
-    } catch (err) {
-        console.error("Error scraping Cypress base depth:", err);
-        return null;
-    }
-}
-
 /**
  * 4) Express endpoints
  *
@@ -223,17 +210,6 @@ app.get('/api/weather', async (req, res) => {
     } catch (error) {
         console.error('Error fetching weather data:', error);
         res.status(500).json({ error: 'Failed to fetch weather data.' });
-    }
-});
-
-app.get("/api/cypress-base-depth", async (req, res) => {
-    try {
-        const baseDepthCm = await scrapeCypressBaseDepth();
-        // Return the value in JSON
-        res.json({ baseDepthCm });
-    } catch (error) {
-        console.error("Error fetching Cypress base depth:", error);
-        res.status(500).json({ error: "Failed to fetch Cypress base depth." });
     }
 });
 

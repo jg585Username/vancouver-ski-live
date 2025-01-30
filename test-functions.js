@@ -45,17 +45,25 @@ getWeather().then((weatherData) => {
     console.log("Weather Data:", weatherData);
 });
 
+
+const axios = require("axios");
 async function scrapeCypressBaseDepth() {
     try {
         const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
         const { data } = await axios.get(url);
 
-        // Safely access the property using optional chaining:
+        // Safely access property using optional chaining:
         const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
+        console.log("Cypress base depth (cm):", cm);     // see the base depth only
 
-        return cm; // e.g., "173"
+        return cm;
     } catch (err) {
         console.error("Error scraping Cypress base depth:", err);
         return null;
     }
 }
+
+(async function main() {
+    const baseDepth = await scrapeCypressBaseDepth();
+    console.log("Result returned:", baseDepth);
+})();
