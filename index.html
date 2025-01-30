@@ -34,7 +34,7 @@
             top: 0;
             z-index: 1000;
         }
-        .navbar-brand { /* lets just use kebab-case */
+        .navbar-brand {
             font-size: 1.2rem;
             font-weight: bold;
         }
@@ -146,11 +146,9 @@
         /* ================ WEATHER TABLE ================ */
         .weather-table-wrapper {
             margin-top: 1rem;
-            /* Let’s keep any overflow of wide tables from breaking layout: */
-            overflow-x: auto;
+            overflow-x: auto; /* let the table scroll horizontally if needed */
         }
         .weather-table {
-            /* Use separate collapse to control row spacing: */
             border-collapse: separate;
             border-spacing: 0 12px; /* 12px vertical gap between rows */
             width: 100%;
@@ -164,22 +162,19 @@
             text-align: left;
             font-weight: 600;
             padding: 8px 12px;
-            white-space: nowrap; /* Keep headings on one line if possible */
-            color: #fff;         /* White text for the header row */
+            white-space: nowrap;
+            color: #fff;
         }
-        /* Table Body Rows - white, “card” style */
+        /* Table Body Rows - white “cards” */
         .weather-table tbody tr {
-            background-color: #fff;  /* White card */
+            background-color: #fff;
             color: #333;
             border-radius: 8px;
-            /* Because some browsers won't clip border-radius on TR directly,
-               we do a little trick below (see the "td:first-child" corners). */
         }
         .weather-table td {
             padding: 12px;
             vertical-align: middle;
         }
-        /* If you want to handle corner rounding explicitly: */
         .weather-table tbody tr td:first-child {
             border-top-left-radius: 8px;
             border-bottom-left-radius: 8px;
@@ -188,7 +183,6 @@
             border-top-right-radius: 8px;
             border-bottom-right-radius: 8px;
         }
-        /* Style for bigger numbers or sub-styles: */
         .big-number {
             font-weight: 600;
             font-size: 1.1rem;
@@ -222,9 +216,8 @@
             .logo-container img {
                 width: 80px;
             }
-            /* Let the table scroll horizontally on small screens */
             .weather-table {
-                min-width: 600px;
+                min-width: 600px; /* ensure we can scroll horizontally if needed */
             }
         }
     </style>
@@ -345,14 +338,49 @@
     document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
     document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
 
+    // =========================
+    // Weather fetching & display
+    // =========================
     async function fetchWeather() {
         const container = document.getElementById('weatherContainer');
         container.innerHTML = `<p>Loading weather data...</p>`;
+
         try {
+            // 1) Fetch from /api/weather (OnTheSnow data)
             const response = await fetch('/api/weather');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            displayWeatherInfo(data.weather || []);
+            let weatherArray = data.weather || [];
+
+            // fetch the real Cypress base depth
+            let cypressDepth = null;
+            try {
+                const cypressBaseResp = await fetch('/api/cypress-base-depth');
+                if (cypressBaseResp.ok) {
+                    const cypressData = await cypressBaseResp.json();
+                    cypressDepth = cypressData.baseDepthCm;
+                }
+            } catch (error) {
+                console.error("Error fetching cypress-base-depth:", error);
+            }
+
+            // If we got a valid cypressDepth, override the baseDepth for cypress
+            if (cypressDepth) {
+                weatherArray = weatherArray.map((resort) => {
+                    if (
+                        resort.name &&
+                        resort.name.toLowerCase().includes('cypress')
+                    ) {
+                        // override the baseDepth from OnTheSnow with real data
+                        return { ...resort, baseDepth: cypressDepth };
+                    }
+                    return resort;
+                });
+            }
+
+            // 2) Display the merged/updated array
+            displayWeatherInfo(weatherArray);
+
         } catch (err) {
             container.innerHTML = `<p class="status closed">Error loading weather information.</p>`;
             console.error('Fetch Weather Error:', err);
@@ -382,22 +410,22 @@
         // Thead
         const thead = document.createElement('thead');
         thead.innerHTML = `
-      <tr>
-        <th>Resort</th>
-        <th>24h Snow</th>
-        <th>Base Depth</th>
-        <th>Conditions</th>
-        <th>Open Trails</th>
-        <th>Open Lifts</th>
-      </tr>
-    `;
+          <tr>
+            <th>Resort</th>
+            <th>24h Snow</th>
+            <th>Base Depth</th>
+            <th>Conditions</th>
+            <th>Open Trails</th>
+            <th>Open Lifts</th>
+          </tr>
+        `;
         table.appendChild(thead);
 
         // Tbody
         const tbody = document.createElement('tbody');
 
         filtered.forEach(resort => {
-            // If you have something like "3 hours ago" info:
+            // If you have "3 hours ago" info, optional:
             const timeAgo = resort.timeAgo ? `${resort.timeAgo} ago` : '';
 
             const tr = document.createElement('tr');
@@ -405,9 +433,9 @@
             // Resort name cell
             const nameTd = document.createElement('td');
             nameTd.innerHTML = `
-        <span class="resort-name">${resort.name}</span>
-        <span class="time-ago">${timeAgo}</span>
-      `;
+                <span class="resort-name">${resort.name}</span>
+                <span class="time-ago">${timeAgo}</span>
+            `;
             tr.appendChild(nameTd);
 
             // 24h Snow cell
@@ -418,7 +446,8 @@
 
             // Base Depth cell
             const baseTd = document.createElement('td');
-            const base = resort.baseDepthRange || `${resort.baseDepth} cm`;
+            // resort.baseDepth might now be the real Cypress depth if we overwrote it
+            const base = `${resort.baseDepth} cm`;
             baseTd.innerHTML = `<span class="big-number">${base}</span>`;
             tr.appendChild(baseTd);
 
@@ -430,11 +459,11 @@
             // Open Trails cell
             const trailsTd = document.createElement('td');
             trailsTd.innerHTML = `
-        ${resort.openTrails} / ${resort.totalTrails}
-        <br><span style="color:#677a8c; font-size:0.85rem;">
-          ${resort.trailPercentageOpen || ''}
-        </span>
-      `;
+                ${resort.openTrails} / ${resort.totalTrails}
+                <br><span style="color:#677a8c; font-size:0.85rem;">
+                ${resort.trailPercentageOpen || ''}
+                </span>
+            `;
             tr.appendChild(trailsTd);
 
             // Open Lifts cell
@@ -456,6 +485,7 @@
 </script>
 </body>
 </html>
+
 
 
 
