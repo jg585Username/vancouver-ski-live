@@ -341,6 +341,19 @@
     // =========================
     // Weather fetching & display
     // =========================
+
+    // 1) Helper to convert 'SLIGHTLY_CLOUDY' -> 'Slightly cloudy'
+    function formatWeatherType(rawType) {
+        if (!rawType || rawType === "N/A") return "—";
+
+        // Lowercase everything
+        let str = rawType.toLowerCase();
+        // Replace underscores with spaces
+        str = str.replace(/_/g, " ");
+        // Capitalize first letter only
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
     async function fetchWeather() {
         const container = document.getElementById('weatherContainer');
         container.innerHTML = `<p>Loading weather data...</p>`;
@@ -446,14 +459,19 @@
 
             // Base Depth cell
             const baseTd = document.createElement('td');
-            // resort.baseDepth might now be the real Cypress depth if we overwrote it
             const base = `${resort.baseDepth} cm`;
             baseTd.innerHTML = `<span class="big-number">${base}</span>`;
             tr.appendChild(baseTd);
 
+            // ==============================
+            // Format the weather type here
+            // ==============================
+            const weatherTypePretty = formatWeatherType(resort.weatherType);
+
             // Conditions cell
             const condTd = document.createElement('td');
-            condTd.textContent = resort.conditions || '—';
+            // Use the formatted string
+            condTd.textContent = weatherTypePretty;
             tr.appendChild(condTd);
 
             // Open Trails cell
@@ -479,12 +497,14 @@
         container.appendChild(tableWrapper);
     }
 
+    // Trigger weather fetch on page load
     window.addEventListener('DOMContentLoaded', () => {
         fetchWeather();
     });
 </script>
 </body>
 </html>
+
 
 
 
