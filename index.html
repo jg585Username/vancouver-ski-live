@@ -220,6 +220,15 @@
                 min-width: 600px; /* ensure we can scroll horizontally if needed */
             }
         }
+        #chartContainer {
+            margin-top: 1.5rem;
+            height: 400px; /* the canvas within it can fill this */
+            position: relative; /* allow absolute placement if needed */
+        }
+        canvas#lineChart {
+            max-height: 100%;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -262,8 +271,19 @@
         <h2>Weather &amp; Snow Info</h2>
         <div id="weatherContainer"></div>
     </div>
+
+    <!-- Lift Ticket Price Analysis Panel -->
+    <div class="translucent-panel" id="ticketPricePanel">
+        <h2>Lift Ticket Price Analysis</h2>
+        <p class="subtitle">Random filler data for now. Hover over points for details!</p>
+        <div id="chartContainer">
+            <canvas id="lineChart"></canvas>
+        </div>
+    </div>
 </main>
 
+<!-- 1) Import Chart.js from a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const liftContainer = document.getElementById('liftContainer');
 
@@ -497,10 +517,119 @@
         container.appendChild(tableWrapper);
     }
 
-    // Trigger weather fetch on page load
     window.addEventListener('DOMContentLoaded', () => {
+        // 1) auto-fetch weather
         fetchWeather();
+
+        // 2) init chart with random data
+        initLiftTicketPriceChart();
     });
+
+    function initLiftTicketPriceChart() {
+        // We'll assume random data for each mountain's "ticket price" across 7 days
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+        // random filler data (in CAD maybe)
+        function randPrices() {
+            return days.map(() => Math.floor(60 + Math.random() * 20));
+        }
+
+        const cypressData = randPrices();  // e.g. [78, 73, 67, 86, 81, ...]
+        const grouseData = randPrices();
+        const seymourData = randPrices();
+
+        // reference the <canvas>
+        const ctx = document.getElementById('lineChart').getContext('2d');
+
+        // create chart
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [
+                    {
+                        label: "Cypress",
+                        data: cypressData,
+                        borderColor: "rgba(255,99,132,1)",
+                        backgroundColor: "rgba(255,99,132,0.2)",
+                        fill: true,
+                        tension: 0.2,  // smooth lines
+                    },
+                    {
+                        label: "Grouse",
+                        data: grouseData,
+                        borderColor: "rgba(54,162,235,1)",
+                        backgroundColor: "rgba(54,162,235,0.2)",
+                        fill: true,
+                        tension: 0.2,
+                    },
+                    {
+                        label: "Seymour",
+                        data: seymourData,
+                        borderColor: "rgba(75,192,192,1)",
+                        backgroundColor: "rgba(75,192,192,0.2)",
+                        fill: true,
+                        tension: 0.2,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // allow it to fill the container
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: "#fff",
+                        titleColor: "#333",
+                        bodyColor: "#333",
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                    },
+                    legend: {
+                        labels: {
+                            color: "#fff", // set label text color
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "#fff"
+                        },
+                        grid: {
+                            color: "rgba(255,255,255,0.1)"
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            color: "#fff",
+                            callback: function (value) {
+                                return "$" + value;
+                            }
+                        },
+                        grid: {
+                            color: "rgba(255,255,255,0.1)"
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: false,
+                    animationDuration: 400, // how quickly to animate hover in
+                },
+                animation: {
+                    duration: 1000, // initial animation
+                    easing: 'easeInOutQuart',
+                }
+            }
+        });
+    }
 </script>
 </body>
 </html>
