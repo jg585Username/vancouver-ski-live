@@ -94,9 +94,10 @@
             border-radius: 8px;
             padding: 1rem;
             box-shadow: 0 0 8px rgba(0,0,0,0.1);
-            width: 200px;
-            text-align: center;
+            width: 220px;
             color: #333;
+            cursor: pointer; /* We'll let the user click anywhere in the box */
+            position: relative;
         }
         .lift-box h2 {
             margin: 0 0 0.5rem;
@@ -111,6 +112,28 @@
         }
         .status.closed {
             color: red;
+        }
+
+        /* Sub-container for runs (hidden by default) */
+        .runs-container {
+            display: none;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #ccc;
+        }
+        .run-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .run-row span {
+            margin-right: 6px;
+        }
+        .difficulty-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+            vertical-align: middle;
         }
 
         /* ================ LOGO GALLERY ================ */
@@ -292,6 +315,7 @@
             - Click logos to see lift and individual run status -
         </p>
         <div class="logo-gallery">
+            <!-- Containers for each mountain logo -->
             <div class="logo-container" id="cypressLogoContainer">
                 <img src="images/cypress_logo.svg" alt="Cypress Mountain"/>
             </div>
@@ -345,64 +369,141 @@
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
 
+    /**
+     * A single function to display lifts + runs for ANY mountain:
+     *    - If 'lift' object has 'runs', we build a runs container.
+     *    - Otherwise, we just show name/status
+     */
     function displayLifts(lifts) {
         liftContainer.innerHTML = '';
+
         lifts.forEach(lift => {
-            const div = document.createElement('div');
-            div.classList.add('lift-box');
+            // Create the outer box
+            const liftBox = document.createElement('div');
+            liftBox.classList.add('lift-box');
 
+            // Use either `lift.liftName` & `lift.liftStatus` (Cypress)
+            // or fallback to `lift.name` & `lift.status` (Grouse/Seymour)
+            const liftName = lift.liftName || lift.name;
+            const liftStatus = lift.liftStatus || lift.status;
+
+            // Title
             const nameEl = document.createElement('h2');
-            nameEl.textContent = lift.name;
-            div.appendChild(nameEl);
+            nameEl.textContent = liftName;
+            liftBox.appendChild(nameEl);
 
+            // Status
             const statusEl = document.createElement('div');
             statusEl.classList.add('status');
-            statusEl.textContent = lift.status;
-            if (lift.status && lift.status.toLowerCase().includes('open')) {
+            statusEl.textContent = liftStatus;
+            if (liftStatus && liftStatus.toLowerCase().includes('open')) {
                 statusEl.classList.add('open');
             } else {
                 statusEl.classList.add('closed');
             }
-            div.appendChild(statusEl);
+            liftBox.appendChild(statusEl);
 
-            // If a Seymour "rawHours" is available
+            // If we have a "rawHours" (Seymour) ...
             if (lift.rawHours) {
                 const hoursEl = document.createElement('p');
                 hoursEl.textContent = `Hours: ${lift.rawHours}`;
-                div.appendChild(hoursEl);
+                liftBox.appendChild(hoursEl);
             }
 
-            liftContainer.appendChild(div);
+            // Create a container for runs (if any)
+            // "runs" is a cypress-specific field
+            if (Array.isArray(lift.runs) && lift.runs.length > 0) {
+                // Hidden by default
+                const runsContainer = document.createElement('div');
+                runsContainer.classList.add('runs-container');
+
+                lift.runs.forEach(run => {
+                    const runRow = document.createElement('div');
+                    runRow.classList.add('run-row');
+
+                    // runName
+                    const runNameEl = document.createElement('span');
+                    runNameEl.textContent = run.runName;
+
+                    // difficulty icon
+                    const diffIcon = document.createElement('img');
+                    diffIcon.classList.add('difficulty-icon');
+                    if (run.difficultyIconUrl) {
+                        diffIcon.src = run.difficultyIconUrl;
+                        diffIcon.alt = run.difficulty || 'Run difficulty';
+                    } else {
+                        // or hide if not available
+                        diffIcon.style.display = 'none';
+                    }
+
+                    // runStatus
+                    const runStatusEl = document.createElement('span');
+                    runStatusEl.textContent = run.runStatus ? `(${run.runStatus})` : '';
+                    if (run.runStatus && run.runStatus.toLowerCase().includes('open')) {
+                        runStatusEl.style.color = 'green';
+                    } else {
+                        runStatusEl.style.color = 'red';
+                    }
+
+                    runRow.appendChild(runNameEl);
+                    runRow.appendChild(diffIcon);
+                    runRow.appendChild(runStatusEl);
+
+                    runsContainer.appendChild(runRow);
+                });
+
+                liftBox.appendChild(runsContainer);
+
+                // Click to toggle the runs container
+                liftBox.addEventListener('click', () => {
+                    if (runsContainer.style.display === 'none') {
+                        runsContainer.style.display = 'block';
+                    } else {
+                        runsContainer.style.display = 'none';
+                    }
+                });
+            }
+
+            // If there's no runs array, no runs container is created
+            // We'll still allow user to "click" but nothing expands
+            liftContainer.appendChild(liftBox);
         });
     }
+
+    // ========== Fetch Cypress, Grouse, or Seymour lifts ==========
 
     async function fetchCypress() {
         try {
             const response = await fetch('/api/cypress-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
+            // data => { lifts: [ { liftName, liftStatus, runs: [...] }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
             console.error('Fetch Cypress Error:', error);
         }
     }
+
     async function fetchGrouse() {
         try {
             const response = await fetch('/api/grouse-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
+            // data => { lifts: [ { name, status }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
             console.error('Fetch Grouse Error:', error);
         }
     }
+
     async function fetchSeymour() {
         try {
             const response = await fetch('/api/seymour-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
+            // data => { lifts: [ { name, status, rawHours }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
@@ -410,6 +511,7 @@
         }
     }
 
+    // Hook up the logo clicks
     document.getElementById('cypressLogoContainer').addEventListener('click', fetchCypress);
     document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
     document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
@@ -563,11 +665,6 @@
      ***********************************************/
 
     // Grouse price rules
-    // Adult(19–64): 89 weekday, 99 weekend
-    // Youth(13–18): 69 weekday, 74 weekend
-    // Child(6–12): 39 weekday, 44 weekend
-    // Skooter(0–5): 0 every day
-    // Senior(65+): 69 weekday, 74 weekend (same as youth)
     function getGrousePrice(dateStr, ageRange) {
         const dateObj = new Date(dateStr);
         const dayOfWeek = dateObj.getDay(); // 0=Sun,1=Mon,...6=Sat
@@ -582,18 +679,13 @@
             case 'child':
                 return isWeekend ? 44 : 39;
             case 'skooter':
-                return 0; // always 0
+                return 0;
             default:
-                return isWeekend ? 99 : 89; // fallback to adult
+                return isWeekend ? 99 : 89;
         }
     }
 
-    // Mt Seymour price rules
-    // Adult(19–64): 39-94 => 66.5 avg
-    // Youth(13–18): 34-59 => 46.5 avg
-    // Child(6–12): 24-37 => 30.5 avg
-    // Skooter(0–5): 8 every day
-    // Senior(65+): 34-59 => 46.5 avg
+    // Seymour price rules
     function getSeymourPrice(ageRange) {
         switch(ageRange) {
             case 'adult':
@@ -606,20 +698,15 @@
             case 'skooter':
                 return 8;
             default:
-                return 66.5; // fallback to adult
+                return 66.5;
         }
     }
 
     // Cypress price logic
-    // Currently the API returns ADULT prices. We do:
-    //   youth/senior => 70%,
-    //   child => 51%,
-    //   skooter => $11,
-    //   adult => 100%.
     function transformCypressPriceForAge(adultPrice, ageRange) {
         switch(ageRange) {
             case 'adult':
-                return adultPrice;    // 100%
+                return adultPrice;
             case 'youth':
             case 'senior':
                 return 0.70 * adultPrice;
@@ -632,26 +719,23 @@
         }
     }
 
-    // ========== CHART CREATION & EVENT HANDLERS ==========
-
     window.addEventListener('DOMContentLoaded', () => {
-        fetchWeather(); // auto-fetch weather on load
+        // Fetch weather immediately
+        fetchWeather();
 
-        // Listen for ageRange changes => re-init chart
+        // If user changes the age range, re-init the chart
         document.getElementById('ageRangeSelect').addEventListener('change', () => {
             initLiftTicketPriceChart();
         });
 
-        // init chart the first time
+        // init chart once
         initLiftTicketPriceChart();
     });
 
     async function initLiftTicketPriceChart() {
-        // 1) Grab selected ageRange from the dropdown
         const ageRange = document.getElementById('ageRangeSelect').value;
         console.log("Selected Age Range:", ageRange);
 
-        // 2) We'll fetch Cypress data from /api/cypress-prices
         let cypressDates = [];
         let cypressPrices = [];
 
@@ -660,31 +744,22 @@
             if (!resp.ok) throw new Error('Network response was not ok');
             const data = await resp.json();
             const cypressTicketData = data.cypressTicketData || [];
-            // cypressTicketData => [ { date: "2025-01-30", price: 108 }, ... ]
 
-            // For demonstration, let's just take the first 7 items. Adjust if you want more.
             const first7 = cypressTicketData.slice(0, 7);
-
-            cypressDates = first7.map(item => item.date);   // e.g. ["2025-01-30", ...]
-            // transform each adultPrice => age-based price
+            cypressDates = first7.map(item => item.date);
             cypressPrices = first7.map(item => transformCypressPriceForAge(item.price, ageRange));
-
         } catch (error) {
             console.error("Error fetching Cypress ticket data:", error);
-            // fallback data (Adult only)
+            // fallback
             cypressDates = ["2025-01-30","2025-01-31","2025-02-01","2025-02-02","2025-02-03","2025-02-04","2025-02-05"];
-            // transform fallback with the same function
             const fallbackAdult = [108, 110, 124, 124, 96, 96, 92];
             cypressPrices = fallbackAdult.map(price => transformCypressPriceForAge(price, ageRange));
         }
 
-        // 3) Build Grouse & Seymour arrays with the same length & aligned dates
-        // We parse each cypressDates[i], figure out day-of-week => Grouse logic
-        // or just use getSeymourPrice() => average for that age range
+        // Grouse & Seymour
         const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr, ageRange));
         const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
 
-        // 4) For chart labels, let's transform "2025-01-30" => e.g. "Jan 30"
         function formatLabel(isoStr) {
             const [yyyy, mm, dd] = isoStr.split("-");
             const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -693,10 +768,8 @@
         }
         const chartLabels = cypressDates.map(date => formatLabel(date));
 
-        // 5) create / update the chart
         const ctx = document.getElementById('lineChart').getContext('2d');
 
-        // If chart already exists, destroy it first
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
@@ -764,7 +837,7 @@
                         ticks: {
                             color: "#fff",
                             callback: function (value) {
-                                return "$" + value.toFixed(2); // e.g. $75.60
+                                return "$" + value.toFixed(2);
                             }
                         },
                         grid: {
@@ -792,6 +865,7 @@
 </script>
 </body>
 </html>
+
 
 
 

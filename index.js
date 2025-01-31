@@ -9,36 +9,64 @@ const PORT = 3000;
 
 app.use(express.static(__dirname));
 
+
 async function scrapeCypressLifts() {
     try {
         const url = 'https://www.cypressmountain.com/api/reportpal?resortName=cy';
         const { data } = await axios.get(url);
-        const areas = data?.facilities?.areas?.area || [];
 
-        // We'll build a results array
+        // Top-level arrays
+        const areas = data?.facilities?.areas?.area || [];
+        const trailDifficultyIcons = data?.icons?.trailDifficultyIcons || {};
+
         const results = [];
 
+        // Loop each "area" (e.g. "Eagle Express", "Lions Express", etc.)
         for (const areaObj of areas) {
-            const lifts = areaObj?.lifts?.lift;
-            if (!Array.isArray(lifts)) continue;
+            const liftsArr = areaObj?.lifts?.lift;   // e.g. [ { name: 'Eagle Express', status: 'Open', ... } ]
+            const trailsArr = areaObj?.trails?.trail; // e.g. runs for that area
 
-            for (const lift of lifts) {
+            if (!Array.isArray(liftsArr)) continue;
+
+            // Some areas can have multiple lifts, we map each one
+            for (const lift of liftsArr) {
                 if (!lift?.name) continue;
-                // For example, "Raven Ridge" => "Closed" or "Open"
+
+                // Gather the runs (if any) for this area
+                let runs = [];
+                if (Array.isArray(trailsArr)) {
+                    runs = trailsArr.map(tr => {
+                        // Map each run to a simpler object
+                        return {
+                            runName: tr.name,
+                            runStatus: tr.status,            // "Open", "Closed", etc.
+                            difficulty: tr.difficulty,       // "Novice", "Intermediate", etc.
+                            // We'll convert "beginner"/"intermediate"/... to the actual icon URL
+                            difficultyIconUrl: trailDifficultyIcons[tr.difficultyIcon]?.image || null,
+                            // Additional fields if you like, e.g. "nightStatus", "groomed", etc.
+                        };
+                    });
+                }
+
+                // Add this lift object to our results
                 results.push({
-                    name: lift.name,
-                    status: lift.status,
+                    liftName: lift.name,
+                    liftStatus: lift.status,
+                    runs
                 });
             }
         }
 
-        return results;
+        return results; // e.g. [ { liftName, liftStatus, runs: [...]}, ... ]
     } catch (err) {
         console.error('Error fetching Cypress lifts:', err);
-        return []; // Return empty on error
+        return [];
     }
 }
 
+/**
+ * 2) Scrape Grouse lifts
+ */
 async function scrapeGrouseLifts() {
     try {
         const url = 'https://www.grousemountain.com/current_conditions';
@@ -119,6 +147,10 @@ async function scrapeSeymourLifts() {
         return [];
     }
 }
+
+/**
+ * 4) Weather scraping
+ */
 async function getWeather() {
     const url =
         "https://www.onthesnow.com/_next/data/2.6.8_en-US/vancouver/open-resorts.json?region=vancouver";
@@ -160,6 +192,9 @@ async function getWeather() {
     }
 }
 
+/**
+ * 5) Scrape Cypress base depth (Nordic or Downhill)
+ */
 async function scrapeCypressBaseDepth() {
     try {
         const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
@@ -167,7 +202,7 @@ async function scrapeCypressBaseDepth() {
 
         // Safely access property using optional chaining:
         const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
-        console.log("Cypress base depth (cm):", cm);     // see the base depth only
+        console.log("Cypress base depth (cm):", cm);
 
         return cm;
     } catch (err) {
@@ -176,17 +211,16 @@ async function scrapeCypressBaseDepth() {
     }
 }
 
+/**
+ * 6) Scrape Cypress ticket prices
+ */
 async function fetchCypressTicketPrices() {
     try {
         const url = "https://shop.cypressmountain.com/api/v1/product-variant";
         const { data } = await axios.get(url);
 
-        // In your JSON snippet, data.Variants[0].DayPriceLists => array of daily objects
-        // We assume the first variant is the relevant one. Adjust if needed.
         const dayPriceLists = data?.Variants?.[0]?.DayPriceLists || [];
 
-        // Map each day object -> { date, price }
-        // 'Date' is like "2025-01-30", 'Price' is an integer (e.g. 108)
         const results = dayPriceLists.map((dayObj) => ({
             date: dayObj.Date,
             price: dayObj.Price,
@@ -198,37 +232,32 @@ async function fetchCypressTicketPrices() {
         return [];
     }
 }
-/**
- * 4) Express endpoints
- *
- *    GET /api/cypress-lifts
- *    GET /api/grouse-lifts
- *    GET /api/seymour-lifts
- *
- *    Each endpoint calls the above scraping function, then returns JSON.
- */
 
-// 4a) Cypress
-app.get('/api/cypress-lifts', async (req, res) => {
+/**
+ * 7) Express endpoints
+ */
+const appRoutes = express.Router();
+
+// 7a) Cypress lifts
+appRoutes.get('/cypress-lifts', async (req, res) => {
     const cypressData = await scrapeCypressLifts();
     res.json({ lifts: cypressData });
 });
 
-// 4b) Grouse
-app.get('/api/grouse-lifts', async (req, res) => {
+// 7b) Grouse
+appRoutes.get('/grouse-lifts', async (req, res) => {
     const grouseData = await scrapeGrouseLifts();
     res.json({ lifts: grouseData });
 });
 
-// 4c) Seymour
-app.get('/api/seymour-lifts', async (req, res) => {
+// 7c) Seymour
+appRoutes.get('/seymour-lifts', async (req, res) => {
     const seymourData = await scrapeSeymourLifts();
     res.json({ lifts: seymourData });
 });
 
-// (Optional) Combined route: GET /api/all-lifts
-// returns an object with { cypress: [...], grouse: [...], seymour: [...] }
-app.get('/api/all-lifts', async (req, res) => {
+// Optional combined route
+appRoutes.get('/all-lifts', async (req, res) => {
     const [cypressData, grouseData, seymourData] = await Promise.all([
         scrapeCypressLifts(),
         scrapeGrouseLifts(),
@@ -241,7 +270,8 @@ app.get('/api/all-lifts', async (req, res) => {
     });
 });
 
-app.get('/api/weather', async (req, res) => {
+// Weather
+appRoutes.get('/weather', async (req, res) => {
     try {
         const weatherData = await getWeather();
         res.json({ weather: weatherData });
@@ -251,10 +281,10 @@ app.get('/api/weather', async (req, res) => {
     }
 });
 
-app.get("/api/cypress-base-depth", async (req, res) => {
+// Cypress base depth
+appRoutes.get('/cypress-base-depth', async (req, res) => {
     try {
         const baseDepthCm = await scrapeCypressBaseDepth();
-        // Return the value in JSON
         res.json({ baseDepthCm });
     } catch (error) {
         console.error("Error fetching Cypress base depth:", error);
@@ -262,11 +292,10 @@ app.get("/api/cypress-base-depth", async (req, res) => {
     }
 });
 
-app.get("/api/cypress-prices", async (req, res) => {
+// Cypress prices
+appRoutes.get('/cypress-prices', async (req, res) => {
     try {
         const cypressTicketData = await fetchCypressTicketPrices();
-        // Return it as JSON
-        // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
         res.json({ cypressTicketData });
     } catch (error) {
         console.error("Error fetching cypress ticket data:", error);
@@ -274,15 +303,19 @@ app.get("/api/cypress-prices", async (req, res) => {
     }
 });
 
+/**
+ * 8) Register routes and start server
+ */
+app.use('/api', appRoutes);
 
-
-// 5) Start the server
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
 });
 
+// Debug logs on startup
 scrapeGrouseLifts().then(data => console.log("Grouse Lifts:", data));
 scrapeCypressLifts().then(data => console.log("Cypress Lifts:", data));
 scrapeSeymourLifts().then(data => console.log("Seymour Lifts:", data));
+
 
  
