@@ -279,8 +279,22 @@
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
             Hover over points for details!<br>
-            <strong>NOTE:</strong> Mt. Seymour has many conditions for various pricing (not reflected here)<br>
+            <strong>Cypress:</strong> Currently Adult prices only.<br>
+            <strong>Grouse / Seymour:</strong> Changes based on age range selection below.
         </p>
+
+        <!-- New Age Range Dropdown -->
+        <div style="text-align: center;">
+            <label for="ageRangeSelect" style="margin-right: 8px;">Age Range:</label>
+            <select id="ageRangeSelect">
+                <option value="adult" selected>Adult (19-64)</option>
+                <option value="youth">Youth (13-18)</option>
+                <option value="child">Child (6-12)</option>
+                <option value="skooter">Skooter (0-5)</option>
+                <option value="senior">Senior (65+)</option>
+            </select>
+        </div>
+
         <div id="chartContainer">
             <canvas id="lineChart"></canvas>
         </div>
@@ -509,29 +523,78 @@
     }
 
     /***********************************************
-     * TICKET PRICE CHART
+     * TICKET PRICE LOGIC
      ***********************************************/
+
+    // Grouse price rules
+    // Adult(19–64): 89 weekday, 99 weekend
+    // Youth(13–18): 69 weekday, 74 weekend
+    // Child(6–12): 39 weekday, 44 weekend
+    // Skooter(0–5): 0 every day
+    // Senior(65+): 69 weekday, 74 weekend (same as youth)
+    function getGrousePrice(dateStr, ageRange) {
+        const dateObj = new Date(dateStr);
+        const dayOfWeek = dateObj.getDay(); // 0=Sun,1=Mon,...6=Sat
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+        switch(ageRange) {
+            case 'adult':
+                return isWeekend ? 99 : 89;
+            case 'youth':
+            case 'senior':
+                return isWeekend ? 74 : 69;
+            case 'child':
+                return isWeekend ? 44 : 39;
+            case 'skooter':
+                return 0; // always 0
+            default:
+                return isWeekend ? 99 : 89; // fallback to adult
+        }
+    }
+
+    // Mt Seymour price rules
+    // Adult(19–64): 39-94 => 66.5 avg
+    // Youth(13–18): 34-59 => 46.5 avg
+    // Child(6–12): 24-37 => 30.5 avg
+    // Skooter(0–5): 8 every day
+    // Senior(65+): 34-59 => 46.5 avg
+    function getSeymourPrice(ageRange) {
+        switch(ageRange) {
+            case 'adult':
+                return 66.5;
+            case 'youth':
+            case 'senior':
+                return 46.5;
+            case 'child':
+                return 30.5;
+            case 'skooter':
+                return 8;
+            default:
+                return 66.5; // fallback to adult
+        }
+    }
+
+    // ========== CHART CREATION & EVENT HANDLERS ==========
+
     window.addEventListener('DOMContentLoaded', () => {
         fetchWeather(); // auto-fetch weather on load
-        initLiftTicketPriceChart(); // init the line chart
+
+        // Listen for ageRange changes => re-init chart
+        document.getElementById('ageRangeSelect').addEventListener('change', () => {
+            initLiftTicketPriceChart();
+        });
+
+        // init chart the first time
+        initLiftTicketPriceChart();
     });
 
-    // Helper: Grouse is $89 Mon-Fri, $99 Sat/Sun
-    function getGrousePrice(dateStr) {
-        // dateStr e.g. "2025-01-30"
-        const dateObj = new Date(dateStr);
-        // getDay() => 0 (Sun), 1 (Mon), ... 6 (Sat)
-        const dayOfWeek = dateObj.getDay();
-        return (dayOfWeek === 0 || dayOfWeek === 6) ? 99 : 89;
-    }
-
-    // Helper: Always $39 - $94 => average 66.5
-    function getSeymourPrice() {
-        return 66.5;
-    }
-
     async function initLiftTicketPriceChart() {
-        // 1) We'll fetch Cypress data from /api/cypress-prices
+        // 1) Grab selected ageRange from the dropdown
+        const ageRange = document.getElementById('ageRangeSelect').value;
+        console.log("Selected Age Range:", ageRange);
+
+        // 2) We'll fetch Cypress data from /api/cypress-prices
+        // For now, we still treat it as "Adult" prices, ignoring age range for Cypress
         let cypressDates = [];
         let cypressPrices = [];
 
@@ -545,39 +608,46 @@
             // For demonstration, let's just take the first 7 items. Adjust if you want more.
             const first7 = cypressTicketData.slice(0, 7);
 
-            cypressDates = first7.map(item => item.date);   // e.g. ["2025-01-30", "2025-01-31", ...]
-            cypressPrices = first7.map(item => item.price); // e.g. [108, 110, 124, ...]
+            cypressDates = first7.map(item => item.date);   // e.g. ["2025-01-30", ...]
+            cypressPrices = first7.map(item => item.price); // e.g. [108, 110, ...]
         } catch (error) {
             console.error("Error fetching Cypress ticket data:", error);
-            // Fallback if needed
+            // fallback data
             cypressDates = ["2025-01-30","2025-01-31","2025-02-01","2025-02-02","2025-02-03","2025-02-04","2025-02-05"];
             cypressPrices = [108, 110, 124, 124, 96, 96, 92];
         }
 
-        const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr));
-        const seymourPrices = cypressDates.map(() => getSeymourPrice());
+        // 3) Build Grouse & Seymour arrays with the same length & aligned dates
+        // We parse each cypressDates[i], figure out day-of-week => Grouse logic
+        // and return the average => Seymour logic
 
-        // 3) For chart labels, transform "2025-01-30" => e.g. "Jan 30"
+        const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr, ageRange));
+        const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
+
+        // 4) For chart labels, let's transform "2025-01-30" => "Jan 30"
         function formatLabel(isoStr) {
-            // naive approach: isoStr "2025-01-30"
-            // split by '-'
             const [yyyy, mm, dd] = isoStr.split("-");
-            // simple map
             const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
             const monthIndex = parseInt(mm, 10) - 1;
             return `${monthNames[monthIndex]} ${parseInt(dd,10)}`;
         }
         const chartLabels = cypressDates.map(date => formatLabel(date));
 
-        // 4) Now we create the chart
+        // 5) create the chart
         const ctx = document.getElementById('lineChart').getContext('2d');
-        new Chart(ctx, {
+
+        // If chart already exists, destroy it first (otherwise you get multiple lines stacking up)
+        if (window.ticketPriceChart) {
+            window.ticketPriceChart.destroy();
+        }
+
+        window.ticketPriceChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: chartLabels,
                 datasets: [
                     {
-                        label: "Cypress",
+                        label: "Cypress (Adult Only)",
                         data: cypressPrices,
                         borderColor: "rgba(255,99,132,1)",
                         backgroundColor: "rgba(255,99,132,0.2)",
@@ -593,7 +663,7 @@
                         tension: 0.2,
                     },
                     {
-                        label: "Seymour ($39 - $94)",
+                        label: "Seymour",
                         data: seymourPrices,
                         borderColor: "rgba(75,192,192,1)",
                         backgroundColor: "rgba(75,192,192,0.2)",
@@ -604,7 +674,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // allow it to fill the container
+                maintainAspectRatio: false,
                 plugins: {
                     tooltip: {
                         enabled: true,
