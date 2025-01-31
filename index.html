@@ -200,6 +200,17 @@
             margin-top: 4px;
         }
 
+        /* Chart Container */
+        #chartContainer {
+            margin-top: 1.5rem;
+            height: 400px;
+            position: relative;
+        }
+        canvas#lineChart {
+            max-height: 100%;
+            width: 100%;
+        }
+
         /* MOBILE */
         @media (max-width: 600px) {
             .translucent-panel {
@@ -219,15 +230,6 @@
             .weather-table {
                 min-width: 600px; /* ensure we can scroll horizontally if needed */
             }
-        }
-        #chartContainer {
-            margin-top: 1.5rem;
-            height: 400px; /* the canvas within it can fill this */
-            position: relative; /* allow absolute placement if needed */
-        }
-        canvas#lineChart {
-            max-height: 100%;
-            width: 100%;
         }
     </style>
 </head>
@@ -275,7 +277,10 @@
     <!-- Lift Ticket Price Analysis Panel -->
     <div class="translucent-panel" id="ticketPricePanel">
         <h2>Lift Ticket Price Analysis</h2>
-        <p class="subtitle">Random filler data for now. Hover over points for details!</p>
+        <p class="subtitle">
+            Hover over points for details!<br>
+            <strong>NOTE:</strong> Mt. Seymour has many conditions for various pricing (not reflected here)<br>
+        </p>
         <div id="chartContainer">
             <canvas id="lineChart"></canvas>
         </div>
@@ -285,6 +290,9 @@
 <!-- 1) Import Chart.js from a CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    /***********************************************
+     * LIFT LOGIC
+     ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
 
     function displayLifts(lifts) {
@@ -329,7 +337,6 @@
             console.error('Fetch Cypress Error:', error);
         }
     }
-
     async function fetchGrouse() {
         try {
             const response = await fetch('/api/grouse-lifts');
@@ -341,7 +348,6 @@
             console.error('Fetch Grouse Error:', error);
         }
     }
-
     async function fetchSeymour() {
         try {
             const response = await fetch('/api/seymour-lifts');
@@ -358,19 +364,12 @@
     document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
     document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
 
-    // =========================
-    // Weather fetching & display
-    // =========================
-
-    // 1) Helper to convert 'SLIGHTLY_CLOUDY' -> 'Slightly cloudy'
+    /***********************************************
+     * WEATHER LOGIC
+     ***********************************************/
     function formatWeatherType(rawType) {
         if (!rawType || rawType === "N/A") return "—";
-
-        // Lowercase everything
-        let str = rawType.toLowerCase();
-        // Replace underscores with spaces
-        str = str.replace(/_/g, " ");
-        // Capitalize first letter only
+        let str = rawType.toLowerCase().replace(/_/g, " ");
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
@@ -458,9 +457,7 @@
         const tbody = document.createElement('tbody');
 
         filtered.forEach(resort => {
-            // If you have "3 hours ago" info, optional:
             const timeAgo = resort.timeAgo ? `${resort.timeAgo} ago` : '';
-
             const tr = document.createElement('tr');
 
             // Resort name cell
@@ -483,15 +480,9 @@
             baseTd.innerHTML = `<span class="big-number">${base}</span>`;
             tr.appendChild(baseTd);
 
-            // ==============================
-            // Format the weather type here
-            // ==============================
-            const weatherTypePretty = formatWeatherType(resort.weatherType);
-
             // Conditions cell
             const condTd = document.createElement('td');
-            // Use the formatted string
-            condTd.textContent = weatherTypePretty;
+            condTd.textContent = formatWeatherType(resort.weatherType);
             tr.appendChild(condTd);
 
             // Open Trails cell
@@ -517,41 +508,77 @@
         container.appendChild(tableWrapper);
     }
 
+    /***********************************************
+     * TICKET PRICE CHART
+     ***********************************************/
     window.addEventListener('DOMContentLoaded', () => {
-        // 1) auto-fetch weather
-        fetchWeather();
-
-        // 2) init chart with random data
-        initLiftTicketPriceChart();
+        fetchWeather(); // auto-fetch weather on load
+        initLiftTicketPriceChart(); // init the line chart
     });
 
-    function initLiftTicketPriceChart() {
-        const days = [
-            "Jan 30", "Jan 31", "Feb 1",
-            "Feb 2",  "Feb 3",  "Feb 4",
-            "Feb 5"
-        ];
+    // Helper: Grouse is $89 Mon-Fri, $99 Sat/Sun
+    function getGrousePrice(dateStr) {
+        // dateStr e.g. "2025-01-30"
+        const dateObj = new Date(dateStr);
+        // getDay() => 0 (Sun), 1 (Mon), ... 6 (Sat)
+        const dayOfWeek = dateObj.getDay();
+        return (dayOfWeek === 0 || dayOfWeek === 6) ? 99 : 89;
+    }
 
-        const cypressData = [108, 110, 124, 124, 96, 96, 92];
-        const grouseData = [89, 89, 99, 99, 89, 89, 89];
+    // Helper: Always $39 - $94 => average 66.5
+    function getSeymourPrice() {
+        return 66.5;
+    }
 
-        // ========== Mt. Seymour Data ==========
-        // Always $39 - $94 => we chart the average ($66.5)
-        const seymourAverage = 66.5;
-        const seymourData = Array(days.length).fill(seymourAverage);
+    async function initLiftTicketPriceChart() {
+        // 1) We'll fetch Cypress data from /api/cypress-prices
+        let cypressDates = [];
+        let cypressPrices = [];
 
-        // reference the <canvas>
+        try {
+            const resp = await fetch('/api/cypress-prices');
+            if (!resp.ok) throw new Error('Network response was not ok');
+            const data = await resp.json();
+            const cypressTicketData = data.cypressTicketData || [];
+            // cypressTicketData => [ { date: "2025-01-30", price: 108 }, ... ]
+
+            // For demonstration, let's just take the first 7 items. Adjust if you want more.
+            const first7 = cypressTicketData.slice(0, 7);
+
+            cypressDates = first7.map(item => item.date);   // e.g. ["2025-01-30", "2025-01-31", ...]
+            cypressPrices = first7.map(item => item.price); // e.g. [108, 110, 124, ...]
+        } catch (error) {
+            console.error("Error fetching Cypress ticket data:", error);
+            // Fallback if needed
+            cypressDates = ["2025-01-30","2025-01-31","2025-02-01","2025-02-02","2025-02-03","2025-02-04","2025-02-05"];
+            cypressPrices = [108, 110, 124, 124, 96, 96, 92];
+        }
+
+        const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr));
+        const seymourPrices = cypressDates.map(() => getSeymourPrice());
+
+        // 3) For chart labels, transform "2025-01-30" => e.g. "Jan 30"
+        function formatLabel(isoStr) {
+            // naive approach: isoStr "2025-01-30"
+            // split by '-'
+            const [yyyy, mm, dd] = isoStr.split("-");
+            // simple map
+            const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const monthIndex = parseInt(mm, 10) - 1;
+            return `${monthNames[monthIndex]} ${parseInt(dd,10)}`;
+        }
+        const chartLabels = cypressDates.map(date => formatLabel(date));
+
+        // 4) Now we create the chart
         const ctx = document.getElementById('lineChart').getContext('2d');
-
-        // create chart
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: days,
+                labels: chartLabels,
                 datasets: [
                     {
                         label: "Cypress",
-                        data: cypressData,
+                        data: cypressPrices,
                         borderColor: "rgba(255,99,132,1)",
                         backgroundColor: "rgba(255,99,132,0.2)",
                         fill: true,
@@ -559,15 +586,15 @@
                     },
                     {
                         label: "Grouse",
-                        data: grouseData,
+                        data: grousePrices,
                         borderColor: "rgba(54,162,235,1)",
                         backgroundColor: "rgba(54,162,235,0.2)",
                         fill: true,
                         tension: 0.2,
                     },
                     {
-                        label: "Seymour",
-                        data: seymourData,
+                        label: "Seymour ($39 - $94)",
+                        data: seymourPrices,
                         borderColor: "rgba(75,192,192,1)",
                         backgroundColor: "rgba(75,192,192,0.2)",
                         fill: true,
@@ -589,7 +616,7 @@
                     },
                     legend: {
                         labels: {
-                            color: "#fff", // set label text color
+                            color: "#fff"
                         }
                     }
                 },
@@ -623,10 +650,10 @@
                 hover: {
                     mode: 'nearest',
                     intersect: false,
-                    animationDuration: 400, // how quickly to animate hover in
+                    animationDuration: 400,
                 },
                 animation: {
-                    duration: 1000, // initial animation
+                    duration: 1000,
                     easing: 'easeInOutQuart',
                 }
             }
@@ -635,6 +662,7 @@
 </script>
 </body>
 </html>
+
 
 
 
