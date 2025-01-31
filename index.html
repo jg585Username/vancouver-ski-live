@@ -316,7 +316,7 @@
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
             Hover over points for details!<br>
-            <strong>Cypress:</strong> Currently Adult prices only.<br>
+            <strong>Cypress:</strong> Fetched from adult API price, scaled for other ages<br>
             <strong>Grouse / Seymour:</strong> Changes based on age range selection below.
         </p>
 
@@ -610,6 +610,28 @@
         }
     }
 
+    // Cypress price logic
+    // Currently the API returns ADULT prices. We do:
+    //   youth/senior => 70%,
+    //   child => 51%,
+    //   skooter => $11,
+    //   adult => 100%.
+    function transformCypressPriceForAge(adultPrice, ageRange) {
+        switch(ageRange) {
+            case 'adult':
+                return adultPrice;    // 100%
+            case 'youth':
+            case 'senior':
+                return 0.70 * adultPrice;
+            case 'child':
+                return 0.51 * adultPrice;
+            case 'skooter':
+                return 11;
+            default:
+                return adultPrice;
+        }
+    }
+
     // ========== CHART CREATION & EVENT HANDLERS ==========
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -630,7 +652,6 @@
         console.log("Selected Age Range:", ageRange);
 
         // 2) We'll fetch Cypress data from /api/cypress-prices
-        // For now, we still treat it as "Adult" prices, ignoring age range for Cypress
         let cypressDates = [];
         let cypressPrices = [];
 
@@ -645,21 +666,25 @@
             const first7 = cypressTicketData.slice(0, 7);
 
             cypressDates = first7.map(item => item.date);   // e.g. ["2025-01-30", ...]
-            cypressPrices = first7.map(item => item.price); // e.g. [108, 110, ...]
+            // transform each adultPrice => age-based price
+            cypressPrices = first7.map(item => transformCypressPriceForAge(item.price, ageRange));
+
         } catch (error) {
             console.error("Error fetching Cypress ticket data:", error);
-            // fallback data
+            // fallback data (Adult only)
             cypressDates = ["2025-01-30","2025-01-31","2025-02-01","2025-02-02","2025-02-03","2025-02-04","2025-02-05"];
-            cypressPrices = [108, 110, 124, 124, 96, 96, 92];
+            // transform fallback with the same function
+            const fallbackAdult = [108, 110, 124, 124, 96, 96, 92];
+            cypressPrices = fallbackAdult.map(price => transformCypressPriceForAge(price, ageRange));
         }
 
         // 3) Build Grouse & Seymour arrays with the same length & aligned dates
         // We parse each cypressDates[i], figure out day-of-week => Grouse logic
-        // and apply getSeymourPrice() => average for that age range
+        // or just use getSeymourPrice() => average for that age range
         const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr, ageRange));
         const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
 
-        // 4) For chart labels, let's transform "2025-01-30" => "Jan 30"
+        // 4) For chart labels, let's transform "2025-01-30" => e.g. "Jan 30"
         function formatLabel(isoStr) {
             const [yyyy, mm, dd] = isoStr.split("-");
             const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -682,7 +707,7 @@
                 labels: chartLabels,
                 datasets: [
                     {
-                        label: "Cypress (Adult Only)",
+                        label: "Cypress",
                         data: cypressPrices,
                         borderColor: "rgba(255,99,132,1)",
                         backgroundColor: "rgba(255,99,132,0.2)",
@@ -739,7 +764,7 @@
                         ticks: {
                             color: "#fff",
                             callback: function (value) {
-                                return "$" + value;
+                                return "$" + value.toFixed(2); // e.g. $75.60
                             }
                         },
                         grid: {
@@ -767,6 +792,7 @@
 </script>
 </body>
 </html>
+
 
 
 
