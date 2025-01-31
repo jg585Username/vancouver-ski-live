@@ -16,9 +16,9 @@
         body {
             font-family: Arial, sans-serif;
             background: url("images/whistler_blackcomb.jpeg") no-repeat center center fixed;
-            background-size: cover;
-            background-color: #333; /* fallback */
-            color: #fff;           /* default text color */
+            background-size: cover; /* Cover entire screen */
+            background-color: #333;  /* fallback */
+            color: #fff;
         }
 
         /* ================ NAV BAR  ================ */
@@ -96,16 +96,18 @@
             box-shadow: 0 0 8px rgba(0,0,0,0.1);
             width: 220px;
             color: #333;
-            cursor: pointer; /* We'll let the user click anywhere in the box */
+            cursor: pointer;
             position: relative;
         }
         .lift-box h2 {
             margin: 0 0 0.5rem;
             font-size: 1.1rem;
+            text-align: center; /* optional if you want the name centered too */
         }
         .status {
             font-size: 1.2rem;
             margin: 0.5rem 0;
+            text-align: center;  /* center the "Open"/"Closed" text */
         }
         .status.open {
             color: green;
@@ -120,6 +122,9 @@
             margin-top: 0.5rem;
             padding-top: 0.5rem;
             border-top: 1px solid #ccc;
+        }
+        .runs-container.show {
+            display: block; /* toggled class to show runs */
         }
         .run-row {
             display: flex;
@@ -344,7 +349,6 @@
             <strong>Grouse / Seymour:</strong> Changes based on age range selection below.
         </p>
 
-        <!-- New Age Range Dropdown -->
         <div class="dropdown-wrapper">
             <select id="ageRangeSelect" class="fancy-dropdown">
                 <option value="adult" selected>Adult (19-64)</option>
@@ -369,21 +373,14 @@
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
 
-    /**
-     * A single function to display lifts + runs for ANY mountain:
-     *    - If 'lift' object has 'runs', we build a runs container.
-     *    - Otherwise, we just show name/status
-     */
     function displayLifts(lifts) {
         liftContainer.innerHTML = '';
 
         lifts.forEach(lift => {
-            // Create the outer box
             const liftBox = document.createElement('div');
             liftBox.classList.add('lift-box');
 
-            // Use either `lift.liftName` & `lift.liftStatus` (Cypress)
-            // or fallback to `lift.name` & `lift.status` (Grouse/Seymour)
+            // Try Cypress fields first, fallback to Grouse/Seymour fields
             const liftName = lift.liftName || lift.name;
             const liftStatus = lift.liftStatus || lift.status;
 
@@ -403,40 +400,34 @@
             }
             liftBox.appendChild(statusEl);
 
-            // If we have a "rawHours" (Seymour) ...
+            // If it's Seymour with rawHours
             if (lift.rawHours) {
                 const hoursEl = document.createElement('p');
                 hoursEl.textContent = `Hours: ${lift.rawHours}`;
                 liftBox.appendChild(hoursEl);
             }
 
-            // Create a container for runs (if any)
-            // "runs" is a cypress-specific field
+            // If Cypress, we might have runs
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
-                // Hidden by default
                 const runsContainer = document.createElement('div');
-                runsContainer.classList.add('runs-container');
+                runsContainer.classList.add('runs-container'); // hidden by default
 
                 lift.runs.forEach(run => {
                     const runRow = document.createElement('div');
                     runRow.classList.add('run-row');
 
-                    // runName
                     const runNameEl = document.createElement('span');
                     runNameEl.textContent = run.runName;
 
-                    // difficulty icon
                     const diffIcon = document.createElement('img');
                     diffIcon.classList.add('difficulty-icon');
                     if (run.difficultyIconUrl) {
                         diffIcon.src = run.difficultyIconUrl;
                         diffIcon.alt = run.difficulty || 'Run difficulty';
                     } else {
-                        // or hide if not available
                         diffIcon.style.display = 'none';
                     }
 
-                    // runStatus
                     const runStatusEl = document.createElement('span');
                     runStatusEl.textContent = run.runStatus ? `(${run.runStatus})` : '';
                     if (run.runStatus && run.runStatus.toLowerCase().includes('open')) {
@@ -448,62 +439,50 @@
                     runRow.appendChild(runNameEl);
                     runRow.appendChild(diffIcon);
                     runRow.appendChild(runStatusEl);
-
                     runsContainer.appendChild(runRow);
                 });
 
                 liftBox.appendChild(runsContainer);
 
-                // Click to toggle the runs container
+                // Toggle the runs container on single click
                 liftBox.addEventListener('click', () => {
-                    if (runsContainer.style.display === 'none') {
-                        runsContainer.style.display = 'block';
-                    } else {
-                        runsContainer.style.display = 'none';
-                    }
+                    runsContainer.classList.toggle('show');
                 });
             }
 
-            // If there's no runs array, no runs container is created
-            // We'll still allow user to "click" but nothing expands
             liftContainer.appendChild(liftBox);
         });
     }
 
-    // ========== Fetch Cypress, Grouse, or Seymour lifts ==========
+    // ========== Fetch endpoints for each mountain ==========
 
     async function fetchCypress() {
         try {
             const response = await fetch('/api/cypress-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // data => { lifts: [ { liftName, liftStatus, runs: [...] }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
             console.error('Fetch Cypress Error:', error);
         }
     }
-
     async function fetchGrouse() {
         try {
             const response = await fetch('/api/grouse-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // data => { lifts: [ { name, status }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
             console.error('Fetch Grouse Error:', error);
         }
     }
-
     async function fetchSeymour() {
         try {
             const response = await fetch('/api/seymour-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // data => { lifts: [ { name, status, rawHours }, ... ] }
             displayLifts(data.lifts);
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
@@ -511,7 +490,6 @@
         }
     }
 
-    // Hook up the logo clicks
     document.getElementById('cypressLogoContainer').addEventListener('click', fetchCypress);
     document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
     document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
@@ -528,15 +506,13 @@
     async function fetchWeather() {
         const container = document.getElementById('weatherContainer');
         container.innerHTML = `<p>Loading weather data...</p>`;
-
         try {
-            // 1) Fetch from /api/weather (OnTheSnow data)
             const response = await fetch('/api/weather');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
             let weatherArray = data.weather || [];
 
-            // fetch the real Cypress base depth
+            // Attempt real Cypress base depth
             let cypressDepth = null;
             try {
                 const cypressBaseResp = await fetch('/api/cypress-base-depth');
@@ -548,23 +524,17 @@
                 console.error("Error fetching cypress-base-depth:", error);
             }
 
-            // If we got a valid cypressDepth, override the baseDepth for cypress
+            // If found real cypress base depth, override
             if (cypressDepth) {
-                weatherArray = weatherArray.map((resort) => {
-                    if (
-                        resort.name &&
-                        resort.name.toLowerCase().includes('cypress')
-                    ) {
-                        // override the baseDepth from OnTheSnow with real data
+                weatherArray = weatherArray.map(resort => {
+                    if (resort.name && resort.name.toLowerCase().includes('cypress')) {
                         return { ...resort, baseDepth: cypressDepth };
                     }
                     return resort;
                 });
             }
 
-            // 2) Display the merged/updated array
             displayWeatherInfo(weatherArray);
-
         } catch (err) {
             container.innerHTML = `<p class="status closed">Error loading weather information.</p>`;
             console.error('Fetch Weather Error:', err);
@@ -572,9 +542,7 @@
     }
 
     function displayWeatherInfo(weatherData) {
-        // Filter out Whistler if needed
         const filtered = weatherData.filter(r => !r.name.toLowerCase().includes('whistler'));
-
         const container = document.getElementById('weatherContainer');
         container.innerHTML = '';
 
@@ -583,15 +551,12 @@
             return;
         }
 
-        // Table wrapper
         const tableWrapper = document.createElement('div');
         tableWrapper.classList.add('weather-table-wrapper');
 
-        // Create table
         const table = document.createElement('table');
         table.classList.add('weather-table');
 
-        // Thead
         const thead = document.createElement('thead');
         thead.innerHTML = `
           <tr>
@@ -605,14 +570,12 @@
         `;
         table.appendChild(thead);
 
-        // Tbody
         const tbody = document.createElement('tbody');
 
         filtered.forEach(resort => {
             const timeAgo = resort.timeAgo ? `${resort.timeAgo} ago` : '';
             const tr = document.createElement('tr');
 
-            // Resort name cell
             const nameTd = document.createElement('td');
             nameTd.innerHTML = `
                 <span class="resort-name">${resort.name}</span>
@@ -620,24 +583,20 @@
             `;
             tr.appendChild(nameTd);
 
-            // 24h Snow cell
             const snowTd = document.createElement('td');
             const snow24 = resort.snow24 > 0 ? `${resort.snow24}"` : `0 cm`;
             snowTd.innerHTML = `<span class="big-number">${snow24}</span>`;
             tr.appendChild(snowTd);
 
-            // Base Depth cell
             const baseTd = document.createElement('td');
             const base = `${resort.baseDepth} cm`;
             baseTd.innerHTML = `<span class="big-number">${base}</span>`;
             tr.appendChild(baseTd);
 
-            // Conditions cell
             const condTd = document.createElement('td');
             condTd.textContent = formatWeatherType(resort.weatherType);
             tr.appendChild(condTd);
 
-            // Open Trails cell
             const trailsTd = document.createElement('td');
             trailsTd.innerHTML = `
                 ${resort.openTrails} / ${resort.totalTrails}
@@ -647,7 +606,6 @@
             `;
             tr.appendChild(trailsTd);
 
-            // Open Lifts cell
             const liftsTd = document.createElement('td');
             liftsTd.textContent = `${resort.openLifts} / ${resort.totalLifts}`;
             tr.appendChild(liftsTd);
@@ -663,8 +621,6 @@
     /***********************************************
      * TICKET PRICE LOGIC
      ***********************************************/
-
-    // Grouse price rules
     function getGrousePrice(dateStr, ageRange) {
         const dateObj = new Date(dateStr);
         const dayOfWeek = dateObj.getDay(); // 0=Sun,1=Mon,...6=Sat
@@ -685,7 +641,6 @@
         }
     }
 
-    // Seymour price rules
     function getSeymourPrice(ageRange) {
         switch(ageRange) {
             case 'adult':
@@ -702,7 +657,6 @@
         }
     }
 
-    // Cypress price logic
     function transformCypressPriceForAge(adultPrice, ageRange) {
         switch(ageRange) {
             case 'adult':
@@ -720,21 +674,20 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        // Fetch weather immediately
+        // 1) auto-fetch weather
         fetchWeather();
 
-        // If user changes the age range, re-init the chart
+        // 2) init chart once
+        initLiftTicketPriceChart();
+
+        // If user changes age range => re-init chart
         document.getElementById('ageRangeSelect').addEventListener('change', () => {
             initLiftTicketPriceChart();
         });
-
-        // init chart once
-        initLiftTicketPriceChart();
     });
 
     async function initLiftTicketPriceChart() {
         const ageRange = document.getElementById('ageRangeSelect').value;
-        console.log("Selected Age Range:", ageRange);
 
         let cypressDates = [];
         let cypressPrices = [];
@@ -756,7 +709,6 @@
             cypressPrices = fallbackAdult.map(price => transformCypressPriceForAge(price, ageRange));
         }
 
-        // Grouse & Seymour
         const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr, ageRange));
         const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
 
@@ -865,6 +817,7 @@
 </script>
 </body>
 </html>
+
 
 
 
