@@ -211,6 +211,43 @@
             width: 100%;
         }
 
+        /* FANCY DROPDOWN STYLES */
+        .dropdown-wrapper {
+            text-align: center;
+            margin-bottom: 1rem; /* space below the dropdown */
+            position: relative;
+            display: inline-block;
+        }
+        .fancy-dropdown {
+            appearance: none; /* remove default arrow in some browsers */
+            background-color: #2c3e50;
+            color: #fff;
+            font-size: 1rem;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid #444;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .fancy-dropdown:hover {
+            background-color: #3e5465;
+        }
+        .fancy-dropdown:focus {
+            background-color: #4a6074;
+        }
+        /* Custom arrow using ::after */
+        .dropdown-wrapper::after {
+            content: "▼";
+            font-size: 0.8rem;
+            color: #fff;
+            position: absolute;
+            right: 14px; /* adjust to align arrow */
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none; /* arrow won't block clicks */
+        }
+
         /* MOBILE */
         @media (max-width: 600px) {
             .translucent-panel {
@@ -278,13 +315,14 @@
     <div class="translucent-panel" id="ticketPricePanel">
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
-            Prices vary based on expected visitors and holiday status
+            Hover over points for details!<br>
+            <strong>Cypress:</strong> Currently Adult prices only.<br>
+            <strong>Grouse / Seymour:</strong> Changes based on age range selection below.
         </p>
 
         <!-- New Age Range Dropdown -->
-        <div style="text-align: center;">
-            <label for="ageRangeSelect" style="margin-right: 8px;">Age Range:</label>
-            <select id="ageRangeSelect">
+        <div class="dropdown-wrapper">
+            <select id="ageRangeSelect" class="fancy-dropdown">
                 <option value="adult" selected>Adult (19-64)</option>
                 <option value="youth">Youth (13-18)</option>
                 <option value="child">Child (6-12)</option>
@@ -617,8 +655,7 @@
 
         // 3) Build Grouse & Seymour arrays with the same length & aligned dates
         // We parse each cypressDates[i], figure out day-of-week => Grouse logic
-        // and return the average => Seymour logic
-
+        // and apply getSeymourPrice() => average for that age range
         const grousePrices = cypressDates.map(dateStr => getGrousePrice(dateStr, ageRange));
         const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
 
@@ -631,10 +668,10 @@
         }
         const chartLabels = cypressDates.map(date => formatLabel(date));
 
-        // 5) create the chart
+        // 5) create / update the chart
         const ctx = document.getElementById('lineChart').getContext('2d');
 
-        // If chart already exists, destroy it first (otherwise you get multiple lines stacking up)
+        // If chart already exists, destroy it first
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
@@ -650,7 +687,7 @@
                         borderColor: "rgba(255,99,132,1)",
                         backgroundColor: "rgba(255,99,132,0.2)",
                         fill: true,
-                        tension: 0.2,  // smooth lines
+                        tension: 0.2,
                     },
                     {
                         label: "Grouse",
@@ -730,6 +767,7 @@
 </script>
 </body>
 </html>
+
 
 
 
