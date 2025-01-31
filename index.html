@@ -526,17 +526,19 @@
     });
 
     function initLiftTicketPriceChart() {
-        // We'll assume random data for each mountain's "ticket price" across 7 days
-        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const days = [
+            "Jan 30", "Jan 31", "Feb 1",
+            "Feb 2",  "Feb 3",  "Feb 4",
+            "Feb 5"
+        ];
 
-        // random filler data (in CAD maybe)
-        function randPrices() {
-            return days.map(() => Math.floor(60 + Math.random() * 20));
-        }
+        const cypressData = [108, 110, 124, 124, 96, 96, 92];
+        const grouseData = [89, 89, 99, 99, 89, 89, 89];
 
-        const cypressData = randPrices();  // e.g. [78, 73, 67, 86, 81, ...]
-        const grouseData = randPrices();
-        const seymourData = randPrices();
+        // ========== Mt. Seymour Data ==========
+        // Always $39 - $94 => we chart the average ($66.5)
+        const seymourAverage = 66.5;
+        const seymourData = Array(days.length).fill(seymourAverage);
 
         // reference the <canvas>
         const ctx = document.getElementById('lineChart').getContext('2d');
