@@ -176,6 +176,28 @@ async function scrapeCypressBaseDepth() {
     }
 }
 
+async function fetchCypressTicketPrices() {
+    try {
+        const url = "https://shop.cypressmountain.com/api/v1/product-variant";
+        const { data } = await axios.get(url);
+
+        // In your JSON snippet, data.Variants[0].DayPriceLists => array of daily objects
+        // We assume the first variant is the relevant one. Adjust if needed.
+        const dayPriceLists = data?.Variants?.[0]?.DayPriceLists || [];
+
+        // Map each day object -> { date, price }
+        // 'Date' is like "2025-01-30", 'Price' is an integer (e.g. 108)
+        const results = dayPriceLists.map((dayObj) => ({
+            date: dayObj.Date,
+            price: dayObj.Price,
+        }));
+
+        return results; // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
+    } catch (err) {
+        console.error("Error fetching Cypress day price lists:", err);
+        return [];
+    }
+}
 /**
  * 4) Express endpoints
  *
@@ -239,6 +261,19 @@ app.get("/api/cypress-base-depth", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch Cypress base depth." });
     }
 });
+
+app.get("/api/cypress-prices", async (req, res) => {
+    try {
+        const cypressTicketData = await fetchCypressTicketPrices();
+        // Return it as JSON
+        // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
+        res.json({ cypressTicketData });
+    } catch (error) {
+        console.error("Error fetching cypress ticket data:", error);
+        res.status(500).json({ error: "Failed to fetch Cypress ticket data." });
+    }
+});
+
 
 
 // 5) Start the server
