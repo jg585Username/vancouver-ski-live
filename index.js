@@ -217,21 +217,30 @@ async function scrapeCypressBaseDepth() {
 async function fetchCypressTicketPrices() {
     try {
         const url = "https://shop.cypressmountain.com/api/v1/product-variant";
-        const { data } = await axios.get(url);
 
-        const dayPriceLists = data?.Variants?.[0]?.DayPriceLists || [];
+        // Example minimal POST, sending an empty body and JSON headers
+        const response = await axios.post(url, {}, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
 
-        const results = dayPriceLists.map((dayObj) => ({
+        // The response data structure should still have .Variants[0].DayPriceLists
+        const dayPriceLists = response?.data?.Variants?.[0]?.DayPriceLists || [];
+
+        // Convert the array to the simpler form your front-end expects
+        const results = dayPriceLists.map(dayObj => ({
             date: dayObj.Date,
-            price: dayObj.Price,
+            price: dayObj.Price
         }));
 
-        return results; // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
+        return results;  // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
     } catch (err) {
         console.error("Error fetching Cypress day price lists:", err);
         return [];
     }
 }
+
 
 /**
  * 7) Express endpoints
