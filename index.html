@@ -345,7 +345,7 @@
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
             Hover over points for details!<br>
-            <strong>Cypress:</strong> Fetched from adult API price, scaled for other ages<br>
+            <strong>Cypress:</strong> Fetched from adult API price (via POST), scaled for other ages<br>
             <strong>Grouse / Seymour:</strong> Changes based on age range selection below.
         </p>
 
@@ -693,6 +693,8 @@
         let cypressPrices = [];
 
         try {
+            // The front-end still calls a simple GET /api/cypress-prices
+            // The server code will use a POST internally to the actual Cypress site
             const resp = await fetch('/api/cypress-prices');
             if (!resp.ok) throw new Error('Network response was not ok');
             const data = await resp.json();
@@ -704,7 +706,10 @@
         } catch (error) {
             console.error("Error fetching Cypress ticket data:", error);
             // fallback
-            cypressDates = ["2025-01-30","2025-01-31","2025-02-01","2025-02-02","2025-02-03","2025-02-04","2025-02-05"];
+            cypressDates = [
+                "2025-01-30","2025-01-31","2025-02-01",
+                "2025-02-02","2025-02-03","2025-02-04","2025-02-05"
+            ];
             const fallbackAdult = [108, 110, 124, 124, 96, 96, 92];
             cypressPrices = fallbackAdult.map(price => transformCypressPriceForAge(price, ageRange));
         }
@@ -714,7 +719,10 @@
 
         function formatLabel(isoStr) {
             const [yyyy, mm, dd] = isoStr.split("-");
-            const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            const monthNames = [
+                "Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"
+            ];
             const monthIndex = parseInt(mm, 10) - 1;
             return `${monthNames[monthIndex]} ${parseInt(dd,10)}`;
         }
@@ -722,6 +730,7 @@
 
         const ctx = document.getElementById('lineChart').getContext('2d');
 
+        // If chart already exists, destroy it to avoid duplicates
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
@@ -817,6 +826,7 @@
 </script>
 </body>
 </html>
+
 
 
 
