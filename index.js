@@ -7,9 +7,11 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-app.use(express.static(__dirname));
+app.use(express.static(__dirname)); // Serves files like index.html, etc.
 
-
+/**
+ * 1) Scrape Cypress Lifts (including runs)
+ */
 async function scrapeCypressLifts() {
     try {
         const url = 'https://www.cypressmountain.com/api/reportpal?resortName=cy';
@@ -21,34 +23,26 @@ async function scrapeCypressLifts() {
 
         const results = [];
 
-        // Loop each "area" (e.g. "Eagle Express", "Lions Express", etc.)
         for (const areaObj of areas) {
-            const liftsArr = areaObj?.lifts?.lift;   // e.g. [ { name: 'Eagle Express', status: 'Open', ... } ]
-            const trailsArr = areaObj?.trails?.trail; // e.g. runs for that area
-
+            const liftsArr = areaObj?.lifts?.lift;
+            const trailsArr = areaObj?.trails?.trail;
             if (!Array.isArray(liftsArr)) continue;
 
-            // Some areas can have multiple lifts, we map each one
+            // Map each lift in this area
             for (const lift of liftsArr) {
                 if (!lift?.name) continue;
 
-                // Gather the runs (if any) for this area
                 let runs = [];
                 if (Array.isArray(trailsArr)) {
-                    runs = trailsArr.map(tr => {
-                        // Map each run to a simpler object
-                        return {
-                            runName: tr.name,
-                            runStatus: tr.status,            // "Open", "Closed", etc.
-                            difficulty: tr.difficulty,       // "Novice", "Intermediate", etc.
-                            // We'll convert "beginner"/"intermediate"/... to the actual icon URL
-                            difficultyIconUrl: trailDifficultyIcons[tr.difficultyIcon]?.image || null,
-                            // Additional fields if you like, e.g. "nightStatus", "groomed", etc.
-                        };
-                    });
+                    runs = trailsArr.map(tr => ({
+                        runName: tr.name,
+                        runStatus: tr.status,
+                        difficulty: tr.difficulty,
+                        difficultyIconUrl:
+                            trailDifficultyIcons[tr.difficultyIcon]?.image || null
+                    }));
                 }
 
-                // Add this lift object to our results
                 results.push({
                     liftName: lift.name,
                     liftStatus: lift.status,
@@ -57,7 +51,7 @@ async function scrapeCypressLifts() {
             }
         }
 
-        return results; // e.g. [ { liftName, liftStatus, runs: [...]}, ... ]
+        return results;
     } catch (err) {
         console.error('Error fetching Cypress lifts:', err);
         return [];
@@ -73,7 +67,6 @@ async function scrapeGrouseLifts() {
         const { data: html } = await axios.get(url);
         const $ = cheerio.load(html);
 
-        // In the #lifts tab, there's <ul class="data-table"><li> for each lift
         const liftSelector = '#lifts ul.data-table li';
         const liftRows = $(liftSelector);
 
@@ -86,11 +79,9 @@ async function scrapeGrouseLifts() {
         liftRows.each((i, el) => {
             const $el = $(el);
 
-            // The first <span> is the lift name
             const nameSpan = $el.find('> span').first();
             const liftName = nameSpan.text().trim();
 
-            // The last <span> might show "Open", "Closed", "Scheduled to Open", etc.
             const statusSpan = $el.find('> span').last();
             const rawStatusText = statusSpan.text().trim();
 
@@ -108,8 +99,7 @@ async function scrapeGrouseLifts() {
 }
 
 /**
- * 3) Seymour scraping function
- *    Returns an array of { name, status, rawHours }, one entry per lift.
+ * 3) Scrape Seymour lifts
  */
 async function scrapeSeymourLifts() {
     try {
@@ -136,8 +126,8 @@ async function scrapeSeymourLifts() {
 
             results.push({
                 name: liftName,
-                status: status,
-                rawHours: statusCellText, // e.g. "9:30 AM - 9:30 PM" or "Closed"
+                status,
+                rawHours: statusCellText
             });
         });
 
@@ -162,28 +152,20 @@ async function getWeather() {
         }
         const data = await response.json();
 
-        // The main resort data array lives at data.pageProps.resorts.data
         const resortsData = data?.pageProps?.resorts?.data || [];
 
-        // Map over each resort, pulling out the fields you need
-        const results = resortsData.map((resort) => {
-            return {
-                name: resort.title,
-                snow24: resort?.snow?.last24 ?? 0,
-                snow48: resort?.snow?.last48 ?? 0,
-
-                baseDepth: resort?.snow?.base ?? 0,
-
-                openTrails: resort?.runs?.open ?? 0,
-                totalTrails: resort?.runs?.total ?? 0,
-
-                openLifts: resort?.lifts?.open ?? 0,
-                totalLifts: resort?.lifts?.total ?? 0,
-
-                windSpeed: resort?.currentWeather?.wind ?? 0,
-                weatherType: resort?.currentWeather?.type ?? "N/A",
-            };
-        });
+        const results = resortsData.map((resort) => ({
+            name: resort.title,
+            snow24: resort?.snow?.last24 ?? 0,
+            snow48: resort?.snow?.last48 ?? 0,
+            baseDepth: resort?.snow?.base ?? 0,
+            openTrails: resort?.runs?.open ?? 0,
+            totalTrails: resort?.runs?.total ?? 0,
+            openLifts: resort?.lifts?.open ?? 0,
+            totalLifts: resort?.lifts?.total ?? 0,
+            windSpeed: resort?.currentWeather?.wind ?? 0,
+            weatherType: resort?.currentWeather?.type ?? "N/A",
+        }));
 
         return results;
     } catch (err) {
@@ -193,17 +175,15 @@ async function getWeather() {
 }
 
 /**
- * 5) Scrape Cypress base depth (Nordic or Downhill)
+ * 5) Scrape Cypress base depth
  */
 async function scrapeCypressBaseDepth() {
     try {
         const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
         const { data } = await axios.get(url);
 
-        // Safely access property using optional chaining:
         const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
         console.log("Cypress base depth (cm):", cm);
-
         return cm;
     } catch (err) {
         console.error("Error scraping Cypress base depth:", err);
@@ -212,38 +192,42 @@ async function scrapeCypressBaseDepth() {
 }
 
 /**
- * 6) Scrape Cypress ticket prices
+ * 6) Scrape Cypress ticket prices - with discovered request payload
  */
 async function fetchCypressTicketPrices() {
     try {
         const url = "https://shop.cypressmountain.com/api/v1/product-variant";
 
-        // Example minimal POST, sending an empty body and JSON headers
-        const response = await axios.post(url, {}, {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
+        // The discovered request body from DevTools
+        const requestBody = {
+            "ProductAttributeValueIds": [3969, 3964],
+            "ProductId": 214,
+            "StartDate": "2025-02-01T00:00:00.000Z",
+            "EndDate": "2025-10-30T00:00:00.000Z"
+        };
 
-        // The response data structure should still have .Variants[0].DayPriceLists
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        const response = await axios.post(url, requestBody, { headers });
+
+        // Check response shape (Variants[0].DayPriceLists, etc.)
         const dayPriceLists = response?.data?.Variants?.[0]?.DayPriceLists || [];
 
-        // Convert the array to the simpler form your front-end expects
-        const results = dayPriceLists.map(dayObj => ({
+        // Convert to simpler form
+        return dayPriceLists.map(dayObj => ({
             date: dayObj.Date,
             price: dayObj.Price
         }));
-
-        return results;  // e.g. [ { date: "2025-01-30", price: 108 }, ... ]
     } catch (err) {
         console.error("Error fetching Cypress day price lists:", err);
         return [];
     }
 }
 
-
 /**
- * 7) Express endpoints
+ * 7) Define Express routes
  */
 const appRoutes = express.Router();
 
@@ -265,7 +249,7 @@ appRoutes.get('/seymour-lifts', async (req, res) => {
     res.json({ lifts: seymourData });
 });
 
-// Optional combined route
+// Combined route
 appRoutes.get('/all-lifts', async (req, res) => {
     const [cypressData, grouseData, seymourData] = await Promise.all([
         scrapeCypressLifts(),
@@ -313,7 +297,7 @@ appRoutes.get('/cypress-prices', async (req, res) => {
 });
 
 /**
- * 8) Register routes and start server
+ * 8) Register routes & start the server
  */
 app.use('/api', appRoutes);
 
@@ -325,6 +309,7 @@ app.listen(PORT, () => {
 scrapeGrouseLifts().then(data => console.log("Grouse Lifts:", data));
 scrapeCypressLifts().then(data => console.log("Cypress Lifts:", data));
 scrapeSeymourLifts().then(data => console.log("Seymour Lifts:", data));
+
 
 
  
