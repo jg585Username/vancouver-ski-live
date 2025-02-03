@@ -24,28 +24,33 @@ async function scrapeCypressLifts() {
         const results = [];
 
         for (const areaObj of areas) {
-            const liftsArr = areaObj?.lifts?.lift;
-            const trailsArr = areaObj?.trails?.trail;
-            if (!Array.isArray(liftsArr)) continue;
+            const liftsArr = areaObj?.lifts?.lift || [];
+            const trailsArr = areaObj?.trails?.trail || [];
 
             // Map each lift in this area
             for (const lift of liftsArr) {
                 if (!lift?.name) continue;
 
-                let runs = [];
-                if (Array.isArray(trailsArr)) {
-                    runs = trailsArr.map(tr => ({
+                // Gather the runs (if any) for this area
+                const runs = Array.isArray(trailsArr)
+                    ? trailsArr.map(tr => ({
                         runName: tr.name,
-                        runStatus: tr.status,
-                        difficulty: tr.difficulty,
+                        runStatus: tr.status, // "Open", "Closed", etc.
+                        difficulty: tr.difficulty,       // e.g. "Novice"
                         difficultyIconUrl:
                             trailDifficultyIcons[tr.difficultyIcon]?.image || null
-                    }));
-                }
+                    }))
+                    : [];
+
+                // Pull out openTime & closeTime (e.g. "09:00", "22:00")
+                const openTime = lift.openTime || null;
+                const closeTime = lift.closeTime || null;
 
                 results.push({
                     liftName: lift.name,
                     liftStatus: lift.status,
+                    openTime,
+                    closeTime,
                     runs
                 });
             }
@@ -57,6 +62,7 @@ async function scrapeCypressLifts() {
         return [];
     }
 }
+
 
 /**
  * 2) Scrape Grouse lifts

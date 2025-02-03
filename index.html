@@ -102,12 +102,12 @@
         .lift-box h2 {
             margin: 0 0 0.5rem;
             font-size: 1.1rem;
-            text-align: center; /* optional if you want the name centered too */
+            text-align: center;
         }
         .status {
             font-size: 1.2rem;
             margin: 0.5rem 0;
-            text-align: center;  /* center the "Open"/"Closed" text */
+            text-align: center;
         }
         .status.open {
             color: green;
@@ -124,7 +124,7 @@
             border-top: 1px solid #ccc;
         }
         .runs-container.show {
-            display: block; /* toggled class to show runs */
+            display: block;
         }
         .run-row {
             display: flex;
@@ -174,15 +174,14 @@
         /* ================ WEATHER TABLE ================ */
         .weather-table-wrapper {
             margin-top: 1rem;
-            overflow-x: auto; /* let the table scroll horizontally if needed */
+            overflow-x: auto;
         }
         .weather-table {
             border-collapse: separate;
-            border-spacing: 0 12px; /* 12px vertical gap between rows */
+            border-spacing: 0 12px;
             width: 100%;
             font-size: 1rem;
         }
-        /* Table Head */
         .weather-table thead tr {
             background-color: rgba(0,0,0,0.3);
         }
@@ -193,7 +192,6 @@
             white-space: nowrap;
             color: #fff;
         }
-        /* Table Body Rows - white “cards” */
         .weather-table tbody tr {
             background-color: #fff;
             color: #333;
@@ -242,12 +240,12 @@
         /* FANCY DROPDOWN STYLES */
         .dropdown-wrapper {
             text-align: center;
-            margin-bottom: 1rem; /* space below the dropdown */
+            margin-bottom: 1rem;
             position: relative;
             display: inline-block;
         }
         .fancy-dropdown {
-            appearance: none; /* remove default arrow in some browsers */
+            appearance: none;
             background-color: #2c3e50;
             color: #fff;
             font-size: 1rem;
@@ -264,19 +262,17 @@
         .fancy-dropdown:focus {
             background-color: #4a6074;
         }
-        /* Custom arrow using ::after */
         .dropdown-wrapper::after {
             content: "▼";
             font-size: 0.8rem;
             color: #fff;
             position: absolute;
-            right: 14px; /* adjust to align arrow */
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
-            pointer-events: none; /* arrow won't block clicks */
+            pointer-events: none;
         }
 
-        /* MOBILE */
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
@@ -293,7 +289,7 @@
                 width: 80px;
             }
             .weather-table {
-                min-width: 600px; /* ensure we can scroll horizontally if needed */
+                min-width: 600px;
             }
         }
     </style>
@@ -367,6 +363,28 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     /***********************************************
+     * HELPER: Convert "HH:MM" (24hr) => "H:MM AM/PM"
+     ***********************************************/
+    function format24To12(timeStr) {
+        // e.g. "09:00" => "9:00 AM", "22:00" => "10:00 PM"
+        if (!timeStr) return "";
+
+        const [hh, mm] = timeStr.split(":");
+        let hour = parseInt(hh, 10);
+        let minute = mm || "00";
+
+        const isPM = hour >= 12;
+        if (hour === 0) {
+            // 0:XX => 12:XX AM
+            hour = 12;
+        } else if (hour > 12) {
+            hour = hour - 12;
+        }
+        const suffix = isPM ? "PM" : "AM";
+        return `${hour}:${minute} ${suffix}`;
+    }
+
+    /***********************************************
      * LIFT LOGIC
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
@@ -397,6 +415,16 @@
                 statusEl.classList.add('closed');
             }
             liftBox.appendChild(statusEl);
+
+            // If we have openTime / closeTime (Cypress)
+            // Convert them to 12-hr format
+            if (lift.openTime || lift.closeTime) {
+                const openTwelve = format24To12(lift.openTime);
+                const closeTwelve = format24To12(lift.closeTime);
+                const timesEl = document.createElement('p');
+                timesEl.textContent = `Hours: ${openTwelve} - ${closeTwelve}`;
+                liftBox.appendChild(timesEl);
+            }
 
             // If it's Seymour with rawHours
             if (lift.rawHours) {
@@ -691,8 +719,7 @@
         let cypressPrices = [];
 
         try {
-            // The front-end still calls a simple GET /api/cypress-prices
-            // The server code will use a POST internally to the actual Cypress site
+            // The front-end calls GET /api/cypress-prices
             const resp = await fetch('/api/cypress-prices');
             if (!resp.ok) throw new Error('Network response was not ok');
             const data = await resp.json();
@@ -728,7 +755,6 @@
 
         const ctx = document.getElementById('lineChart').getContext('2d');
 
-        // If chart already exists, destroy it to avoid duplicates
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
