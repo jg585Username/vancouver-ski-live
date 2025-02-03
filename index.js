@@ -192,7 +192,7 @@ async function scrapeCypressBaseDepth() {
 }
 
 /**
- * 6) Scrape Cypress ticket prices - with discovered request payload
+ * 6) Scrape Cypress ticket prices
  */
 async function fetchCypressTicketPrices() {
     try {
