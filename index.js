@@ -208,7 +208,7 @@ async function fetchCypressTicketPrices() {
         const requestBody = {
             "ProductAttributeValueIds": [3969, 3964],
             "ProductId": 214,
-            "StartDate": "2025-02-02T00:00:00.000Z",
+            "StartDate": "2025-02-03T00:00:00.000Z",
             "EndDate": "2025-10-30T00:00:00.000Z"
         };
 
