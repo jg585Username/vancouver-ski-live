@@ -204,33 +204,53 @@ async function fetchCypressTicketPrices() {
     try {
         const url = "https://shop.cypressmountain.com/api/v1/product-variant";
 
-        // The discovered request body from DevTools
-        const requestBody = {
+        // Helper function to get today's date as an ISO string in the format "YYYY-MM-DDT00:00:00.000Z"
+        function getTodayISOString() {
+            const now = new Date();
+            // Split the ISO string to keep only the date part and append the fixed time.
+            return now.toISOString().split("T")[0] + "T00:00:00.000Z";
+        }
+
+        // Optionally, if you also need an EndDate (for example, 7 days later), you can do:
+        function getFutureISOString(daysAhead) {
+            const future = new Date();
+            future.setDate(future.getDate() + daysAhead);
+            return future.toISOString().split("T")[0] + "T00:00:00.000Z";
+        }
+
+        const startDate = getTodayISOString();
+        const endDate = getFutureISOString(7); // change 7 to whatever period you need
+
+        const payload = {
             "ProductAttributeValueIds": [3969, 3964],
             "ProductId": 214,
-            "StartDate": "2025-02-03T00:00:00.000Z",
-            "EndDate": "2025-10-30T00:00:00.000Z"
+            "StartDate": startDate,
+            "EndDate": endDate
         };
 
-        const headers = {
-            "Content-Type": "application/json"
-        };
+        // Send a POST request with the payload and appropriate headers.
+        const response = await axios.post(url, payload, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
 
-        const response = await axios.post(url, requestBody, { headers });
-
-        // Check response shape (Variants[0].DayPriceLists, etc.)
+        // The response data should have the price lists
         const dayPriceLists = response?.data?.Variants?.[0]?.DayPriceLists || [];
 
-        // Convert to simpler form
-        return dayPriceLists.map(dayObj => ({
+        // Map the data to a simpler format for the front end
+        const results = dayPriceLists.map(dayObj => ({
             date: dayObj.Date,
             price: dayObj.Price
         }));
+
+        return results;  // e.g. [ { date: "2025-02-04", price: 108 }, ... ]
     } catch (err) {
         console.error("Error fetching Cypress day price lists:", err);
         return [];
     }
 }
+
 
 /**
  * 7) Define Express routes
