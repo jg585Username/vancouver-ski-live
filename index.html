@@ -521,20 +521,21 @@
                 liftBox.appendChild(timesEl);
             }
 
-            // Grouse => if open => 9:00 AM - 9:00 PM, else "Hours: Closed"
-            // (only if we detect "Grouse" style lifts with no known openTime/closeTime)
             if (!lift.openTime && !lift.closeTime && lift.liftName === undefined && lift.name) {
                 // We'll assume it's a Grouse object
                 if (liftStatus && liftStatus.toLowerCase().includes('open')) {
                     const hoursEl = document.createElement('p');
                     hoursEl.textContent = "Hours: 9:00 AM - 9:00 PM";
                     liftBox.appendChild(hoursEl);
-                } else {
+                }
+                /*
+                else {
                     // closed
                     const hoursEl = document.createElement('p');
                     hoursEl.textContent = "Hours: Closed";
                     liftBox.appendChild(hoursEl);
                 }
+                 */
             }
 
             // If Seymour rawHours
