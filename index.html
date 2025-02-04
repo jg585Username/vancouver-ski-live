@@ -96,7 +96,6 @@
             box-shadow: 0 0 8px rgba(0,0,0,0.1);
             width: 220px;
             color: #333;
-            cursor: pointer;
             position: relative;
         }
         .lift-box h2 {
@@ -116,29 +115,65 @@
             color: red;
         }
 
-        /* Sub-container for runs (hidden by default) */
-        .runs-container {
-            display: none;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid #ccc;
+        /* ================ MODAL & OVERLAY FOR RUNS ================ */
+        /* Overlay dims/blurs the background */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            display: none; /* hidden by default */
+            z-index: 9999;
         }
-        .runs-container.show {
-            display: block;
+        /* The centered modal for runs info */
+        .runs-modal {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #444;
+            color: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: none; /* hidden by default */
+            z-index: 10000; /* above the overlay */
         }
-        .run-row {
+        .runs-modal h3 {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .runs-modal .run-row {
             display: flex;
             align-items: center;
             margin-bottom: 6px;
         }
-        .run-row span {
+        .runs-modal .run-row span {
             margin-right: 6px;
         }
-        .difficulty-icon {
+        .runs-modal .difficulty-icon {
             width: 20px;
             height: 20px;
             margin-right: 6px;
-            vertical-align: middle;
+        }
+        /* Close button in the modal */
+        .runs-modal .close-btn {
+            margin-top: 1rem;
+            display: block;
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .runs-modal .close-btn:hover {
+            background-color: #3e5465;
         }
 
         /* ================ LOGO GALLERY ================ */
@@ -359,6 +394,14 @@
     </div>
 </main>
 
+<!-- Runs Overlay & Modal (for Cypress run statuses) -->
+<div id="overlay" class="overlay"></div>
+<div id="runsModal" class="runs-modal">
+    <h3 id="runsModalTitle"></h3>
+    <div id="runsModalContent"></div>
+    <button class="close-btn" id="runsModalClose">Close</button>
+</div>
+
 <!-- 1) Import Chart.js from a CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -366,23 +409,78 @@
      * HELPER: Convert "HH:MM" (24hr) => "H:MM AM/PM"
      ***********************************************/
     function format24To12(timeStr) {
-        // e.g. "09:00" => "9:00 AM", "22:00" => "10:00 PM"
         if (!timeStr) return "";
-
         const [hh, mm] = timeStr.split(":");
         let hour = parseInt(hh, 10);
         let minute = mm || "00";
 
         const isPM = hour >= 12;
         if (hour === 0) {
-            // 0:XX => 12:XX AM
-            hour = 12;
+            hour = 12; // 0 => 12 AM
         } else if (hour > 12) {
-            hour = hour - 12;
+            hour = hour - 12; // e.g. 13 => 1 PM
         }
         const suffix = isPM ? "PM" : "AM";
         return `${hour}:${minute} ${suffix}`;
     }
+
+    /***********************************************
+     * MODAL + OVERLAY FOR RUNS
+     ***********************************************/
+    const overlay = document.getElementById('overlay');
+    const runsModal = document.getElementById('runsModal');
+    const runsModalTitle = document.getElementById('runsModalTitle');
+    const runsModalContent = document.getElementById('runsModalContent');
+    const runsModalCloseBtn = document.getElementById('runsModalClose');
+
+    function showRunsModal(liftName, runs) {
+        // Clear old content
+        runsModalTitle.textContent = liftName;
+        runsModalContent.innerHTML = '';
+
+        // Build new rows for each run
+        runs.forEach(run => {
+            const row = document.createElement('div');
+            row.classList.add('run-row');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = run.runName;
+
+            const diffIcon = document.createElement('img');
+            diffIcon.classList.add('difficulty-icon');
+            if (run.difficultyIconUrl) {
+                diffIcon.src = run.difficultyIconUrl;
+                diffIcon.alt = run.difficulty || 'Run difficulty';
+            } else {
+                diffIcon.style.display = 'none';
+            }
+
+            const statusSpan = document.createElement('span');
+            statusSpan.textContent = run.runStatus ? `(${run.runStatus})` : '';
+            if (run.runStatus && run.runStatus.toLowerCase().includes('open')) {
+                statusSpan.style.color = 'green';
+            } else {
+                statusSpan.style.color = 'red';
+            }
+
+            row.appendChild(nameSpan);
+            row.appendChild(diffIcon);
+            row.appendChild(statusSpan);
+
+            runsModalContent.appendChild(row);
+        });
+
+        // Show overlay + modal
+        overlay.style.display = 'block';
+        runsModal.style.display = 'block';
+    }
+
+    function hideRunsModal() {
+        overlay.style.display = 'none';
+        runsModal.style.display = 'none';
+    }
+    runsModalCloseBtn.addEventListener('click', hideRunsModal);
+    overlay.addEventListener('click', hideRunsModal); // click outside to close
 
     /***********************************************
      * LIFT LOGIC
@@ -396,16 +494,14 @@
             const liftBox = document.createElement('div');
             liftBox.classList.add('lift-box');
 
-            // Try Cypress fields first, fallback to Grouse/Seymour fields
+            // Name & status
             const liftName = lift.liftName || lift.name;
             const liftStatus = lift.liftStatus || lift.status;
 
-            // Title
             const nameEl = document.createElement('h2');
             nameEl.textContent = liftName;
             liftBox.appendChild(nameEl);
 
-            // Status
             const statusEl = document.createElement('div');
             statusEl.classList.add('status');
             statusEl.textContent = liftStatus;
@@ -416,8 +512,7 @@
             }
             liftBox.appendChild(statusEl);
 
-            // If we have openTime / closeTime (Cypress)
-            // Convert them to 12-hr format
+            // Cypress open/closeTime => show 12h format if provided
             if (lift.openTime || lift.closeTime) {
                 const openTwelve = format24To12(lift.openTime);
                 const closeTwelve = format24To12(lift.closeTime);
@@ -426,53 +521,35 @@
                 liftBox.appendChild(timesEl);
             }
 
-            // If it's Seymour with rawHours
+            // Grouse => if open => 9:00 AM - 9:00 PM, else "Hours: Closed"
+            // (only if we detect "Grouse" style lifts with no known openTime/closeTime)
+            if (!lift.openTime && !lift.closeTime && lift.liftName === undefined && lift.name) {
+                // We'll assume it's a Grouse object
+                if (liftStatus && liftStatus.toLowerCase().includes('open')) {
+                    const hoursEl = document.createElement('p');
+                    hoursEl.textContent = "Hours: 9:00 AM - 9:00 PM";
+                    liftBox.appendChild(hoursEl);
+                } else {
+                    // closed
+                    const hoursEl = document.createElement('p');
+                    hoursEl.textContent = "Hours: Closed";
+                    liftBox.appendChild(hoursEl);
+                }
+            }
+
+            // If Seymour rawHours
             if (lift.rawHours) {
                 const hoursEl = document.createElement('p');
                 hoursEl.textContent = `Hours: ${lift.rawHours}`;
                 liftBox.appendChild(hoursEl);
             }
 
-            // If Cypress, we might have runs
+            // If Cypress runs exist, we show them in modal on click
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
-                const runsContainer = document.createElement('div');
-                runsContainer.classList.add('runs-container'); // hidden by default
-
-                lift.runs.forEach(run => {
-                    const runRow = document.createElement('div');
-                    runRow.classList.add('run-row');
-
-                    const runNameEl = document.createElement('span');
-                    runNameEl.textContent = run.runName;
-
-                    const diffIcon = document.createElement('img');
-                    diffIcon.classList.add('difficulty-icon');
-                    if (run.difficultyIconUrl) {
-                        diffIcon.src = run.difficultyIconUrl;
-                        diffIcon.alt = run.difficulty || 'Run difficulty';
-                    } else {
-                        diffIcon.style.display = 'none';
-                    }
-
-                    const runStatusEl = document.createElement('span');
-                    runStatusEl.textContent = run.runStatus ? `(${run.runStatus})` : '';
-                    if (run.runStatus && run.runStatus.toLowerCase().includes('open')) {
-                        runStatusEl.style.color = 'green';
-                    } else {
-                        runStatusEl.style.color = 'red';
-                    }
-
-                    runRow.appendChild(runNameEl);
-                    runRow.appendChild(diffIcon);
-                    runRow.appendChild(runStatusEl);
-                    runsContainer.appendChild(runRow);
-                });
-
-                liftBox.appendChild(runsContainer);
-
-                // Toggle the runs container on single click
+                // Make the entire box clickable
+                liftBox.style.cursor = 'pointer';
                 liftBox.addEventListener('click', () => {
-                    runsContainer.classList.toggle('show');
+                    showRunsModal(liftName, lift.runs);
                 });
             }
 
@@ -649,7 +726,7 @@
      ***********************************************/
     function getGrousePrice(dateStr, ageRange) {
         const dateObj = new Date(dateStr);
-        const dayOfWeek = dateObj.getDay(); // 0=Sun,1=Mon,...6=Sat
+        const dayOfWeek = dateObj.getDay();
         const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
         switch(ageRange) {
@@ -719,7 +796,6 @@
         let cypressPrices = [];
 
         try {
-            // The front-end calls GET /api/cypress-prices
             const resp = await fetch('/api/cypress-prices');
             if (!resp.ok) throw new Error('Network response was not ok');
             const data = await resp.json();
@@ -850,6 +926,7 @@
 </script>
 </body>
 </html>
+
 
 
 
