@@ -487,7 +487,8 @@
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
 
-    function displayLifts(lifts) {
+    // Updated to include a 2nd param, resortName
+    function displayLifts(lifts, resortName) {
         liftContainer.innerHTML = '';
 
         lifts.forEach(lift => {
@@ -521,13 +522,19 @@
                 liftBox.appendChild(timesEl);
             }
 
-            if (!lift.openTime && !lift.closeTime && lift.liftName === undefined && lift.name) {
-                // We'll assume it's a Grouse object
-                if (liftStatus && liftStatus.toLowerCase().includes('open')) {
-                    const hoursEl = document.createElement('p');
-                    hoursEl.textContent = "Hours: 9:00 AM - 9:00 PM";
-                    liftBox.appendChild(hoursEl);
-                }
+            // Only show "9:00 AM - 9:00 PM" for Grouse
+            if (
+                resortName === 'grouse' &&
+                !lift.openTime &&
+                !lift.closeTime &&
+                lift.liftName === undefined &&
+                lift.name &&
+                liftStatus &&
+                liftStatus.toLowerCase().includes('open')
+            ) {
+                const hoursEl = document.createElement('p');
+                hoursEl.textContent = "Hours: 9:00 AM - 9:00 PM";
+                liftBox.appendChild(hoursEl);
             }
 
             // If Seymour rawHours
@@ -537,7 +544,7 @@
                 liftBox.appendChild(hoursEl);
             }
 
-            // If Cypress runs exist, we show them in modal on click
+            // If Cypress runs exist, show them in modal on click
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
                 // Make the entire box clickable
                 liftBox.style.cursor = 'pointer';
@@ -551,35 +558,39 @@
     }
 
     // ========== Fetch endpoints for each mountain ==========
-
     async function fetchCypress() {
         try {
             const response = await fetch('/api/cypress-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            displayLifts(data.lifts);
+            // Pass "cypress" to displayLifts
+            displayLifts(data.lifts, 'cypress');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
             console.error('Fetch Cypress Error:', error);
         }
     }
+
     async function fetchGrouse() {
         try {
             const response = await fetch('/api/grouse-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            displayLifts(data.lifts);
+            // Pass "grouse" to displayLifts
+            displayLifts(data.lifts, 'grouse');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
             console.error('Fetch Grouse Error:', error);
         }
     }
+
     async function fetchSeymour() {
         try {
             const response = await fetch('/api/seymour-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            displayLifts(data.lifts);
+            // Pass "seymour" to displayLifts
+            displayLifts(data.lifts, 'seymour');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
             console.error('Fetch Seymour Error:', error);
@@ -824,6 +835,7 @@
 
         const ctx = document.getElementById('lineChart').getContext('2d');
 
+        // Destroy old chart if it exists, before re-creating
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
@@ -919,16 +931,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
