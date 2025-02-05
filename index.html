@@ -82,21 +82,30 @@
             margin: 0.5rem 0 1.5rem;
         }
 
-        /* ================ WEBCAM SCROLL ================ */
-        .webcam-scroll-container {
+        /* ================ WEBCAMS SCROLL BOX ================ */
+        /* ================ WEBCAMS / LIVE IMAGES ================ */
+        /* 1) Give the webcam panel a special class for smaller padding */
+        .webcam-panel {
+            padding: 1rem; /* override the default 2rem from .translucent-panel */
+        }
+        .webcam-panel h2 {
+            margin: 0.5rem 0; /* reduce space around the heading */
+        }
+
+        /* 2) Keep horizontal scroll but shrink images with max-height */
+        .webcam-gallery {
             display: flex;
+            flex-wrap: nowrap;
             gap: 1rem;
             overflow-x: auto;
-            padding: 1rem 0;
+            padding: 0.5rem 0;
         }
-        .webcam-wrapper {
-            flex: 0 0 auto;
-        }
-        .webcam-wrapper img {
-            height: 300px; /* Adjust as needed */
-            display: block;
-            border: 2px solid #fff;
+        .webcam-gallery img {
+            max-height: 150px; /* scale images down */
+            width: auto;
+            object-fit: cover;
             border-radius: 8px;
+            flex-shrink: 0;
         }
 
         /* ================ LIFT BOXES ================ */
@@ -107,20 +116,18 @@
             gap: 1rem;
         }
         .lift-box {
-            background-color: #fff;
+            background-color: #c2eaf0;
             border-radius: 8px;
             padding: 1rem;
             box-shadow: 0 0 8px rgba(0,0,0,0.1);
             width: 220px;
             color: #333;
-            position: relative;
-            /* Make boxes look clickable */
             cursor: pointer;
             transition: transform 0.3s, box-shadow 0.3s;
         }
         .lift-box:hover {
             transform: translateY(-5px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .lift-box h2 {
             margin: 0 0 0.5rem;
@@ -140,17 +147,15 @@
         }
 
         /* ================ MODAL & OVERLAY FOR RUNS ================ */
-        /* Overlay dims/blurs the background */
         .overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(4px);
-            display: none; /* hidden by default */
+            display: none;
             z-index: 9999;
         }
-        /* The centered modal for runs info */
         .runs-modal {
             position: fixed;
             top: 50%; left: 50%;
@@ -162,8 +167,8 @@
             max-width: 500px;
             width: 90%;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            display: none; /* hidden by default */
-            z-index: 10000; /* above the overlay */
+            display: none;
+            z-index: 10000;
         }
         .runs-modal h3 {
             margin-bottom: 1rem;
@@ -182,7 +187,6 @@
             height: 20px;
             margin-right: 6px;
         }
-        /* Close button in the modal */
         .runs-modal .close-btn {
             margin-top: 1rem;
             display: block;
@@ -369,26 +373,24 @@
 
 <main>
 
-    <!-- Webcam Panel (Scroll horizontally) -->
-    <div class="translucent-panel">
-        <h2>Live Mountain Cams</h2>
-        <div class="webcam-scroll-container">
-            <!-- Webcam 1 (Mt. Seymour) -->
-            <div class="webcam-wrapper">
-                <img
-                        src="https://mysterypeak.mtseymour.ca/jpg/image.jpg"
-                        alt="Mt. Seymour Live Image"
-                />
-            </div>
-            <!-- Webcam 2 (Cypress - if direct URL doesn’t work, use a filler image) -->
-            <div class="webcam-wrapper">
-                <img
-                        src="https://www.youtube.com/watch?v=OSKgIDnBwwQ&embeds_referring_euri=https%3A%2F%2Fwww.cypressmountain.com%2F&source_ve_path=Mjg2NjY"
-                        alt="Cypress Live Image"
-                />
-            </div>
+    <!-- ================ WEBCAMS / LIVE IMAGES ================ -->
+    <!-- Use an extra class: webcam-panel, with reduced padding -->
+    <div class="translucent-panel webcam-panel">
+        <h2>Current Conditions</h2>
+        <div class="webcam-gallery">
+            <!-- Image 1: Mystery Peak (Mt Seymour) -->
+            <img
+                    src="https://mysterypeak.mtseymour.ca/jpg/image.jpg"
+                    alt="Seymour webcam"
+            />
+            <!-- Image 2: Cypress (thumbnail fallback) -->
+            <img
+                    src="https://i.ytimg.com/vi/OSKgIDnBwwQ/hqdefault.jpg?v=ca5e&sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDwoqOdvfo3P5tsQRf-d9ipH9xSuw"
+                    alt="Cypress webcam"
+            />
         </div>
     </div>
+    <!-- =============== END WEBCAMS PANEL =============== -->
 
     <!-- Lifts Panel -->
     <div class="translucent-panel">
@@ -567,7 +569,7 @@
                 liftBox.appendChild(timesEl);
             }
 
-            // Only show "9:00 AM - 9:00 PM" for Grouse
+            // If resortName is 'grouse' and it's open => show "9:00 AM - 9:00 PM"
             if (
                 resortName === 'grouse' &&
                 !lift.openTime &&
@@ -591,7 +593,6 @@
 
             // If Cypress runs exist, we show them in modal on click
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
-                // The entire box is clickable, see :hover above
                 liftBox.addEventListener('click', () => {
                     showRunsModal(liftName, lift.runs);
                 });
@@ -602,7 +603,6 @@
     }
 
     // ========== Fetch endpoints for each mountain ==========
-
     async function fetchCypress() {
         try {
             const response = await fetch('/api/cypress-lifts');
@@ -689,6 +689,7 @@
     }
 
     function displayWeatherInfo(weatherData) {
+        // Filter out any Whistler data if present
         const filtered = weatherData.filter(r => !r.name.toLowerCase().includes('whistler'));
         const container = document.getElementById('weatherContainer');
         container.innerHTML = '';
@@ -875,7 +876,7 @@
 
         const ctx = document.getElementById('lineChart').getContext('2d');
 
-        // Destroy old chart if it exists, before re-creating
+        // Destroy old chart if it exists, to avoid duplication
         if (window.ticketPriceChart) {
             window.ticketPriceChart.destroy();
         }
@@ -971,4 +972,5 @@
 </script>
 </body>
 </html>
+
 
