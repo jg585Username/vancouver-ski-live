@@ -82,6 +82,23 @@
             margin: 0.5rem 0 1.5rem;
         }
 
+        /* ================ WEBCAM SCROLL ================ */
+        .webcam-scroll-container {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+        .webcam-wrapper {
+            flex: 0 0 auto;
+        }
+        .webcam-wrapper img {
+            height: 300px; /* Adjust as needed */
+            display: block;
+            border: 2px solid #fff;
+            border-radius: 8px;
+        }
+
         /* ================ LIFT BOXES ================ */
         .lift-container {
             display: flex;
@@ -90,22 +107,21 @@
             gap: 1rem;
         }
         .lift-box {
-            background-color: #e3e9ff;
+            background-color: #fff;
             border-radius: 8px;
             padding: 1rem;
             box-shadow: 0 0 8px rgba(0,0,0,0.1);
             width: 220px;
             color: #333;
             position: relative;
-            transition: transform 0.3s,  /* Enables a smooth transition when hovering */
-            box-shadow 0.3s;
+            /* Make boxes look clickable */
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-
         .lift-box:hover {
-            transform: translateY(-5px); /* Slight "lift" on hover */
+            transform: translateY(-5px);
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
-
         .lift-box h2 {
             margin: 0 0 0.5rem;
             font-size: 1.1rem;
@@ -345,13 +361,35 @@
         <ul>
             <li><a href="index.html">HOME</a></li>
             <li><a href="#faq">WEBCAMS</a></li>
-            <li><a href="about.html">WEATHER</a></li>
+            <li><a href="about.html">ABOUT</a></li>
             <li><a href="contact.html">CONTACT</a></li>
         </ul>
     </nav>
 </header>
 
 <main>
+
+    <!-- Webcam Panel (Scroll horizontally) -->
+    <div class="translucent-panel">
+        <h2>Live Mountain Cams</h2>
+        <div class="webcam-scroll-container">
+            <!-- Webcam 1 (Mt. Seymour) -->
+            <div class="webcam-wrapper">
+                <img
+                        src="https://mysterypeak.mtseymour.ca/jpg/image.jpg"
+                        alt="Mt. Seymour Live Image"
+                />
+            </div>
+            <!-- Webcam 2 (Cypress - if direct URL doesn’t work, use a filler image) -->
+            <div class="webcam-wrapper">
+                <img
+                        src="https://www.skaping.com/cypress-mountain/mount-strachan"
+                        alt="Cypress Live Image"
+                />
+            </div>
+        </div>
+    </div>
+
     <!-- Lifts Panel -->
     <div class="translucent-panel">
         <h1>Ski Vancouver Live Status</h1>
@@ -495,7 +533,6 @@
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
 
-    // Updated to include a 2nd param, resortName
     function displayLifts(lifts, resortName) {
         liftContainer.innerHTML = '';
 
@@ -552,10 +589,9 @@
                 liftBox.appendChild(hoursEl);
             }
 
-            // If Cypress runs exist, show them in modal on click
+            // If Cypress runs exist, we show them in modal on click
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
-                // Make the entire box clickable
-                liftBox.style.cursor = 'pointer';
+                // The entire box is clickable, see :hover above
                 liftBox.addEventListener('click', () => {
                     showRunsModal(liftName, lift.runs);
                 });
@@ -566,38 +602,34 @@
     }
 
     // ========== Fetch endpoints for each mountain ==========
+
     async function fetchCypress() {
         try {
             const response = await fetch('/api/cypress-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // Pass "cypress" to displayLifts
             displayLifts(data.lifts, 'cypress');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
             console.error('Fetch Cypress Error:', error);
         }
     }
-
     async function fetchGrouse() {
         try {
             const response = await fetch('/api/grouse-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // Pass "grouse" to displayLifts
             displayLifts(data.lifts, 'grouse');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
             console.error('Fetch Grouse Error:', error);
         }
     }
-
     async function fetchSeymour() {
         try {
             const response = await fetch('/api/seymour-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            // Pass "seymour" to displayLifts
             displayLifts(data.lifts, 'seymour');
         } catch (error) {
             liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
@@ -939,3 +971,4 @@
 </script>
 </body>
 </html>
+
