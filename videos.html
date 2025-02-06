@@ -83,6 +83,12 @@
             margin: 0.5rem 0 1.5rem;
         }
 
+        .vids iframe {
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
 
         @media (max-width: 600px) {
             .translucent-panel {
@@ -121,15 +127,20 @@
 
 <main>
     <div class="translucent-panel">
-        <h1>Contact</h1>
+        <h1>Cool Videos</h1>
         <p>
-            Please feel free to create a new issue on the GitHub repository if you notice any bugs/errors or would like to suggest new features.
-            This website was created by jg585Username and is hosted on <a href="https://jg585.github.io/">https://jg585.github.io/</a>.
-        </p>
-        <p>
+            I will regularly post some pretty cool and maybe useful videos about each of the mountains here.
             <a href="index.html">Back to Home</a>
         </p>
     </div>
+
+
+    <div class="translucent-panel">
+        <h2>Cypress Videos</h2>
+            <div class="vids"></div>
+        <iframe width="826" height="464.666" src="https://www.youtube.com/embed/i5eiMNdWifQ" title="Every BLACK RUN on Cypress Mountain (Rainbow, Top Gun, etc)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+
 </main>
 
 <script>
