@@ -1,4 +1,6 @@
-//TODO: Make weather bar and nav bar resizing
+//TODO: Add run status for Grouse and Seymour
+//TODO: Add rental and lesson price analysis
+//TODO: Videos tab
 
 const axios = require('axios');
 const cheerio = require('cheerio');
