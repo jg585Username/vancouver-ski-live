@@ -9,7 +9,7 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 
-app.use(express.static(__dirname)); // Serves files like index.html, etc.
+app.use(express.static(__dirname));
 
 /**
  * 1) Scrape Cypress Lifts (including runs)
@@ -369,19 +369,12 @@ appRoutes.get('/seymour-lifts', async (req, res) => {
     res.json({ lifts: seymourData });
 });
 
-appRoutes.get('/seymour-lifts', async (req, res) => {
-    try {
-        // This function scrapes lifts & runs, returning them in the shape:
-        // [ { liftName, liftStatus, runs: [ { runName, difficulty, runStatus }, ... ] }, ... ]
-        const seymourData = await scrapeSeymourLifts();
-
-        // Return in the expected format: { lifts: [...] }
-        res.json({ lifts: seymourData });
-    } catch (error) {
-        console.error('Error fetching Seymour lifts:', error);
-        res.status(500).json({ error: 'Failed to fetch seymour lifts' });
-    }
+//TODO
+appRoutes.get('/seymour-runs', async (req, res) => {
+    const seymourRunsData = await scrapeSeymourRuns();
+    res.json({ runs: seymourRunsData });
 });
+
 
 // Combined route
 appRoutes.get('/all-lifts', async (req, res) => {
