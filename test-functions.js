@@ -139,3 +139,8 @@ async function scrapeSeymourRuns() {
         return [];
     }
 }
+
+(async () => {
+    const runs = await scrapeSeymourRuns();
+    console.log(runs);
+})();
