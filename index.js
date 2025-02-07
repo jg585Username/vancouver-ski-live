@@ -227,53 +227,40 @@ async function scrapeSeymourRuns() {
 
         const $ = cheerio.load(html);
         const sections = $('tr.accordion-heading');
+
+        // We'll still gather a flat array first
         const allRuns = [];
 
-        // Each 'accordion-heading' row = 1 Lift (e.g., "Lodge Chair")
+        // 1) Collect all run info
         sections.each((i, section) => {
             const $section = $(section);
-
-            // Extract the lift name from the <th>
             const liftName = $section.find('th').first().text().trim();
-
-            // The next sibling <tr class="border-none"> holds the run details
             const $runsRow = $section.next('tr.border-none');
-
-            // Inside that <tr>, the runs are in <article> with class "node--type-trail..."
             const runArticles = $runsRow.find('article.node--type-trail.node--view-mode-row');
 
             runArticles.each((j, article) => {
                 const $article = $(article);
-
-                // 1) Run Name
                 const runName = $article.find('.cell.title').text().trim();
 
-                // 2) Difficulty from the "title" attribute in: <div class="f-icon icon level level-beginner" title="Beginner">
+                // Difficulty from the div.f-icon.icon.level
                 const difficulty = $article
                     .find('.f-icon.icon.level')
                     .attr('title') || 'Unknown';
 
-                // 3) Day/Night status: each "cell.status" usually contains a <div class="f-icon icon status status-open" title="Open">
+                // Day/Night status
                 const statusCells = $article.find('.cell.status');
-                let dayStatus = 'Unknown';
-                let nightStatus = 'Unknown';
+                let dayStatus = 'Closed';
+                let nightStatus = 'Closed';
 
-                // If they have 2 cells: [0] = day, [1] = night
-                if (statusCells.length === 2) {
-                    const $dayIcon = $(statusCells[0]).find('.f-icon.icon.status');
-                    const $nightIcon = $(statusCells[1]).find('.f-icon.icon.status');
-
-                    // We check if it has .status-open or .status-closed
-                    dayStatus = $dayIcon.hasClass('status-open') ? 'Open' : 'Closed';
-                    nightStatus = $nightIcon.hasClass('status-open') ? 'Open' : 'Closed';
-
-                } else if (statusCells.length === 1) {
-                    // Possibly only a Day status
+                if (statusCells.length >= 1) {
                     const $dayIcon = $(statusCells[0]).find('.f-icon.icon.status');
                     dayStatus = $dayIcon.hasClass('status-open') ? 'Open' : 'Closed';
                 }
+                if (statusCells.length >= 2) {
+                    const $nightIcon = $(statusCells[1]).find('.f-icon.icon.status');
+                    nightStatus = $nightIcon.hasClass('status-open') ? 'Open' : 'Closed';
+                }
 
-                // 4) Push into our result array
                 allRuns.push({
                     liftName,
                     runName,
@@ -284,12 +271,49 @@ async function scrapeSeymourRuns() {
             });
         });
 
-        return allRuns;
+        // 2) Now group runs by liftName into { liftName, liftStatus, runs: [] }
+        const liftsMap = {};
+
+        allRuns.forEach(run => {
+            const { liftName, runName, difficulty, dayStatus, nightStatus } = run;
+
+            // If we haven't seen this lift yet, create it
+            if (!liftsMap[liftName]) {
+                liftsMap[liftName] = {
+                    liftName,
+                    liftStatus: 'Open',  // default; you can adjust based on runs if you like
+                    runs: []
+                };
+            }
+
+            // Combine day & night statuses into one runStatus if you want:
+            // e.g. if both are open => 'Open', if one is open => 'Partially Open'
+            let combinedStatus = 'Closed';
+            if (dayStatus === 'Open' && nightStatus === 'Open') {
+                combinedStatus = 'Open';
+            } else if (dayStatus === 'Open' || nightStatus === 'Open') {
+                combinedStatus = 'Partially Open';
+            }
+
+            liftsMap[liftName].runs.push({
+                runName,
+                difficulty,
+                runStatus: combinedStatus
+            });
+        });
+
+        // 3) Return array of lifts
+        const liftsArray = Object.values(liftsMap);
+        return liftsArray;
+
     } catch (err) {
         console.error('Error scraping Seymour runs:', err);
         return [];
     }
 }
+
+module.exports = { scrapeSeymourRuns };
+
 
 /**
  * 6) Scrape Cypress ticket prices
@@ -369,10 +393,15 @@ appRoutes.get('/seymour-lifts', async (req, res) => {
     res.json({ lifts: seymourData });
 });
 
-//TODO
-appRoutes.get('/seymour-runs', async (req, res) => {
-    const seymourRunsData = await scrapeSeymourRuns();
-    res.json({ runs: seymourRunsData });
+app.get('/api/seymour-lifts', async (req, res) => {
+    try {
+        const seymourRunsData = await scrapeSeymourRuns();
+        // seymourRunsData => [ { liftName, liftStatus, runs: [...] }, ... ]
+        res.json({ lifts: seymourRunsData });
+    } catch (err) {
+        console.error('Error in /api/seymour-lifts route:', err);
+        res.status(500).json({ error: 'Failed to scrape seymour' });
+    }
 });
 
 
