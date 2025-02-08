@@ -546,6 +546,27 @@ app.get('/api/seymour-lifts', async (req, res) => {
     }
 });
 
+const router = express.Router();
+const { scrapeGrouseRuns } = require('../scrapers/scrapeGrouseRuns');
+
+router.get('/grouse-lifts', async (req, res) => {
+    try {
+        // This returns an array of lifts => [ { liftName, liftStatus, runs: [ ... ] }, ... ]
+        const grouseLiftsArray = await scrapeGrouseRuns();
+
+        // Send in shape { lifts: [...] } to match your front-end
+        res.json({ lifts: grouseLiftsArray });
+    } catch (err) {
+        console.error('Error in /grouse-lifts route:', err);
+        res.status(500).json({ error: 'Failed to scrape Grouse lifts' });
+    }
+});
+
+const grouseRoutes = require('./routes/grouse-lifts'); // the file above
+const app = express();
+app.use('/api', grouseRoutes); // => final path is /api/grouse-lifts
+
+module.exports = router;
 
 // Combined route
 appRoutes.get('/all-lifts', async (req, res) => {
