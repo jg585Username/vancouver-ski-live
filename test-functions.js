@@ -144,3 +144,129 @@ async function scrapeSeymourRuns() {
     const runs = await scrapeSeymourRuns();
     console.log(runs);
 })();
+
+
+async function scrapeGrouseRuns() {
+    try {
+        const url = 'https://www.grousemountain.com/ski-snowboard/runs';
+        // or wherever your actual Grouse conditions page is
+        const { data: html } = await axios.get(url);
+
+        const $ = cheerio.load(html);
+
+        // 1) We'll look inside the container for runs => <ul class='data-table'> <li> ...
+        //    Adjust the selector as needed if the structure changes.
+        const runItems = $("div#runs ul.data-table li");
+
+        // We'll store a flat array first, like we did with Seymour
+        let allRuns = [];
+
+        runItems.each((_, li) => {
+            const $li = $(li);
+
+            // Run Name => inside the first <span> text (minus the difficulty icon)
+            // e.g. "Chalet Road", "The Cut", "Paradise", etc.
+            // Often the structure is: <span><span class='runs-blue'></span> The Cut</span>
+            // We'll extract the text & trim
+            let runName = $li.find("span").first().text().trim();
+            // In some cases, that might include partial text from difficulty. We'll handle difficulty below
+            // and just do a small cleanup.
+            runName = cleanupRunName(runName);
+
+            // Status => look for <span class='open'> or <span class='closed'>
+            // The text might be "Open" or "Closed"
+            let runStatus = "Closed";
+            if ($li.find("span.open").length > 0) {
+                runStatus = "Open";
+            }
+
+            // Difficulty => from classes like .runs-green, .runs-blue, .runs-diamond, .runs-double-diamond
+            // We'll pick the first match we find
+            let difficulty = "Unknown";
+            if ($li.find(".runs-green").length) {
+                difficulty = "Green";
+            } else if ($li.find(".runs-blue").length) {
+                difficulty = "Blue";
+            } else if ($li.find(".runs-diamond").length && !$li.find(".runs-double-diamond").length) {
+                difficulty = "Black Diamond";
+            } else if ($li.find(".runs-double-diamond").length) {
+                difficulty = "Double Black Diamond";
+            }
+
+            // We'll push into a flat array
+            allRuns.push({
+                runName,
+                difficulty,
+                runStatus
+            });
+        });
+
+        // 2) Map each runName => a specific lift name (manually assigned)
+        //    We'll create a dictionary that normalizes run names to lower case
+        const runToLiftMap = {
+            // Screaming Eagle Chair
+            "the cut": "Screaming Eagle Chair",
+            "side cut park": "Screaming Eagle Chair",
+            "lower side cut": "Screaming Eagle Chair",
+            "paper trail": "Screaming Eagle Chair",
+            "skyline": "Screaming Eagle Chair",
+
+            // Show tow handle cut (?)
+            // You mentioned "Show tow handle cut" for "side cut park" also,
+            // but let's keep the single-lift assignment or adapt as needed:
+            // "side cut park": "Show tow handle cut", // conflict with above?
+
+            // Greenway Quad Chair
+            "paradise": "Greenway Quad Chair",
+
+            // Magic Carpet
+            "ski wee": "Magic Carpet",
+
+            // Peak Quad Chair
+            "peak": "Peak Quad Chair",
+            "lower peak": "Peak Quad Chair",
+            "heaven's sake": "Peak Quad Chair",
+            "peak glades": "Peak Quad Chair",
+            "no man's land": "Peak Quad Chair",
+
+            // ... everything else => "Olympic Express Chair"
+            // We'll handle that default below
+        };
+
+        // 3) Group runs => array of lifts
+        const liftsMap = {};
+
+        allRuns.forEach(run => {
+            const { runName, difficulty, runStatus } = run;
+            // We'll find the mapped lift, or default to "Olympic Express Chair"
+            const liftName = mapRunToLift(runName, runToLiftMap);
+
+            if (!liftsMap[liftName]) {
+                liftsMap[liftName] = {
+                    liftName,
+                    liftStatus: "Open", // or some logic if you want to check if any run is open
+                    runs: []
+                };
+            }
+
+            // Add the run to the runs array
+            liftsMap[liftName].runs.push({
+                runName,
+                difficulty,
+                runStatus
+            });
+        });
+
+        // convert liftsMap to array
+        return Object.values(liftsMap);
+
+    } catch (err) {
+        console.error('Error scraping Grouse runs:', err);
+        return [];
+    }
+}
+
+(async () => {
+    const g = await scrapeGrouseRuns();
+    console.log(g);
+})();
