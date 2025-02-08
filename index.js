@@ -315,7 +315,7 @@ async function scrapeSeymourRuns() {
 module.exports = { scrapeSeymourRuns };
 async function scrapeGrouseRuns() {
     try {
-        const url = 'https://www.grousemountain.com/ski-snowboard/runs';
+        const url = 'https://www.grousemountain.com/current_conditions#runs';
         // or wherever your actual Grouse conditions page is
         const { data: html } = await axios.get(url);
 
@@ -324,6 +324,8 @@ async function scrapeGrouseRuns() {
         // 1) We'll look inside the container for runs => <ul class='data-table'> <li> ...
         //    Adjust the selector as needed if the structure changes.
         const runItems = $("div#runs ul.data-table li");
+
+        console.log("Found runItems count =>", runItems.length);
 
         // We'll store a flat array first, like we did with Seymour
         let allRuns = [];
@@ -547,7 +549,7 @@ app.get('/api/seymour-lifts', async (req, res) => {
 });
 
 const router = express.Router();
-const { scrapeGrouseRuns } = require('../scrapers/scrapeGrouseRuns');
+//const { scrapeGrouseRuns } = require('../scrapers/scrapeGrouseRuns');
 
 router.get('/grouse-lifts', async (req, res) => {
     try {
@@ -561,10 +563,6 @@ router.get('/grouse-lifts', async (req, res) => {
         res.status(500).json({ error: 'Failed to scrape Grouse lifts' });
     }
 });
-
-const grouseRoutes = require('./routes/grouse-lifts'); // the file above
-const app = express();
-app.use('/api', grouseRoutes); // => final path is /api/grouse-lifts
 
 module.exports = router;
 

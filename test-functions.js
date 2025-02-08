@@ -148,7 +148,7 @@ async function scrapeSeymourRuns() {
 
 async function scrapeGrouseRuns() {
     try {
-        const url = 'https://www.grousemountain.com/ski-snowboard/runs';
+        const url = 'https://www.grousemountain.com/current_conditions#runs';
         // or wherever your actual Grouse conditions page is
         const { data: html } = await axios.get(url);
 
@@ -266,7 +266,8 @@ async function scrapeGrouseRuns() {
     }
 }
 
-(async () => {
-    const g = await scrapeGrouseRuns();
-    console.log(g);
-})();
+scrapeGrouseRuns().then(data => {
+    console.log("Grouse Lifts/Runs data:", JSON.stringify(data, null, 2));
+}).catch(err => {
+    console.error("Error testing Grouse:", err);
+});
