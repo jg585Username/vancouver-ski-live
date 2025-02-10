@@ -602,13 +602,10 @@
                 liftBox.appendChild(timesEl);
             }
 
-            // If resortName is 'grouse' and it's open => show "9:00 AM - 9:00 PM"
             if (
                 resortName === 'grouse' &&
                 !lift.openTime &&
                 !lift.closeTime &&
-                lift.liftName === undefined &&
-                lift.name &&
                 liftStatus &&
                 liftStatus.toLowerCase().includes('open')
             ) {
