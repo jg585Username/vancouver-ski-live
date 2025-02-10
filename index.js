@@ -221,12 +221,15 @@ async function scrapeGrouseRuns() {
     }
 }
 
+const axios = require("axios");
+const cheerio = require("cheerio");
+
 /**
- * 5) Scrape Seymour lifts (simple or advanced) + runs
+ * 1) Basic lifts (rawHours)
  */
 async function scrapeSeymourLifts() {
     try {
-        const url = 'https://mtseymour.ca/the-mountain/todays-conditions-hours';
+        const url = "https://mtseymour.ca/the-mountain/todays-conditions-hours";
         const { data: html } = await axios.get(url);
 
         const $ = cheerio.load(html);
@@ -236,65 +239,67 @@ async function scrapeSeymourLifts() {
             return [];
         }
 
-        const rows = liftsTable.find('tr.accordion-heading');
+        const rows = liftsTable.find("tr.accordion-heading");
         const results = [];
 
         rows.each((i, row) => {
             const $row = $(row);
-            const liftName = $row.find('th').first().text().trim();
-            const statusCellText = $row.find('td').first().text().trim();
+            const liftName = $row.find("th").first().text().trim();
+            const statusCellText = $row.find("td").first().text().trim();
 
             const isClosed = /closed/i.test(statusCellText);
-            const status = isClosed ? 'Closed' : 'Open';
+            const status = isClosed ? "Closed" : "Open";
 
             results.push({
-                name: liftName,
-                status,
+                name: liftName,      // note: "name" here
+                status,              // "Open"/"Closed"
                 rawHours: statusCellText
             });
         });
 
         return results;
     } catch (err) {
-        console.error('Error scraping Seymour lifts:', err);
+        console.error("Error scraping Seymour lifts:", err);
         return [];
     }
 }
 
-// ... The advanced version that returns runs specifically
+/**
+ * 2) Advanced runs
+ */
 async function scrapeSeymourRuns() {
     try {
-        const url = 'https://mtseymour.ca/the-mountain/todays-conditions-hours';
+        const url = "https://mtseymour.ca/the-mountain/todays-conditions-hours";
         const { data: html } = await axios.get(url);
 
         const $ = cheerio.load(html);
-        const sections = $('tr.accordion-heading');
+        const sections = $("tr.accordion-heading");
 
         const allRuns = [];
 
         sections.each((i, section) => {
             const $section = $(section);
-            const liftName = $section.find('th').first().text().trim();
-            const $runsRow = $section.next('tr.border-none');
-            const runArticles = $runsRow.find('article.node--type-trail.node--view-mode-row');
+            const liftName = $section.find("th").first().text().trim();
+            const $runsRow = $section.next("tr.border-none");
+            const runArticles = $runsRow.find("article.node--type-trail.node--view-mode-row");
 
             runArticles.each((j, article) => {
                 const $article = $(article);
-                const runName = $article.find('.cell.title').text().trim();
+                const runName = $article.find(".cell.title").text().trim();
 
-                const difficulty = $article.find('.f-icon.icon.level').attr('title') || 'Unknown';
+                const difficulty = $article.find(".f-icon.icon.level").attr("title") || "Unknown";
 
-                const statusCells = $article.find('.cell.status');
-                let dayStatus = 'Closed';
-                let nightStatus = 'Closed';
+                const statusCells = $article.find(".cell.status");
+                let dayStatus = "Closed";
+                let nightStatus = "Closed";
 
                 if (statusCells.length >= 1) {
-                    const $dayIcon = $(statusCells[0]).find('.f-icon.icon.status');
-                    dayStatus = $dayIcon.hasClass('status-open') ? 'Open' : 'Closed';
+                    const $dayIcon = $(statusCells[0]).find(".f-icon.icon.status");
+                    dayStatus = $dayIcon.hasClass("status-open") ? "Open" : "Closed";
                 }
                 if (statusCells.length >= 2) {
-                    const $nightIcon = $(statusCells[1]).find('.f-icon.icon.status');
-                    nightStatus = $nightIcon.hasClass('status-open') ? 'Open' : 'Closed';
+                    const $nightIcon = $(statusCells[1]).find(".f-icon.icon.status");
+                    nightStatus = $nightIcon.hasClass("status-open") ? "Open" : "Closed";
                 }
 
                 allRuns.push({
@@ -307,23 +312,28 @@ async function scrapeSeymourRuns() {
             });
         });
 
+        /**
+         * Build an array of lifts with runs
+         */
         const liftsMap = {};
-        allRuns.forEach(run => {
+        allRuns.forEach((run) => {
             const { liftName, runName, difficulty, dayStatus, nightStatus } = run;
 
             if (!liftsMap[liftName]) {
                 liftsMap[liftName] = {
                     liftName,
-                    liftStatus: 'Open',
+                    // We'll default all lifts to "Open" then possibly override below if needed
+                    liftStatus: "Open",
                     runs: []
                 };
             }
 
-            let combinedStatus = 'Closed';
-            if (dayStatus === 'Open' && nightStatus === 'Open') {
-                combinedStatus = 'Open';
-            } else if (dayStatus === 'Open' || nightStatus === 'Open') {
-                combinedStatus = 'Partially Open';
+            // Decide run's combined status
+            let combinedStatus = "Closed";
+            if (dayStatus === "Open" && nightStatus === "Open") {
+                combinedStatus = "Open";
+            } else if (dayStatus === "Open" || nightStatus === "Open") {
+                combinedStatus = "Partially Open";
             }
 
             liftsMap[liftName].runs.push({
@@ -331,15 +341,85 @@ async function scrapeSeymourRuns() {
                 difficulty,
                 runStatus: combinedStatus
             });
+
+            // If *every* run is closed, you might eventually set liftStatus=Closed,
+            // but you would need extra logic for that. Right now we just say "Open".
         });
 
         return Object.values(liftsMap);
-
     } catch (err) {
-        console.error('Error scraping Seymour runs:', err);
+        console.error("Error scraping Seymour runs:", err);
         return [];
     }
 }
+
+/**
+ * 3) Combine the two so each lift has runs + rawHours
+ */
+async function scrapeSeymourAll() {
+    // Grab both in parallel for performance
+    const [basic, advanced] = await Promise.all([
+        scrapeSeymourLifts(),
+        scrapeSeymourRuns()
+    ]);
+
+    // Convert each array into a map keyed by the lift name (in lowercase for matching)
+    const basicMap = {};
+    basic.forEach(b => {
+        const key = b.name.toLowerCase();
+        basicMap[key] = {
+            liftName: b.name,
+            liftStatus: b.status,
+            rawHours: b.rawHours
+        };
+    });
+
+    const advancedMap = {};
+    advanced.forEach(a => {
+        const key = a.liftName.toLowerCase();
+        advancedMap[key] = {
+            liftName: a.liftName,
+            liftStatus: a.liftStatus,
+            runs: a.runs
+        };
+    });
+
+    // Merge them
+    const merged = [];
+    const allKeys = new Set([...Object.keys(basicMap), ...Object.keys(advancedMap)]);
+
+    for (const key of allKeys) {
+        const fromBasic = basicMap[key] || {};
+        const fromAdvanced = advancedMap[key] || {};
+
+        // Use advanced liftName if it exists, else fallback
+        const liftName = fromAdvanced.liftName || fromBasic.liftName || "Unknown Lift";
+
+        // Decide lift status. If advanced says "Open" or "Closed", that can take precedence
+        let liftStatus = fromAdvanced.liftStatus || fromBasic.liftStatus || "Unknown";
+
+        // rawHours only from basic side
+        const rawHours = fromBasic.rawHours || "";
+
+        // runs only from advanced side
+        const runs = fromAdvanced.runs || [];
+
+        merged.push({
+            liftName,
+            liftStatus,
+            rawHours,
+            runs
+        });
+    }
+
+    return merged;
+}
+
+module.exports = {
+    scrapeSeymourLifts,
+    scrapeSeymourRuns,
+    scrapeSeymourAll
+};
 
 /**
  * 6) OnTheSnow Weather
@@ -417,19 +497,15 @@ appRoutes.get('/grouse-lifts', async (req, res) => {
 });
 
 // 7c) Seymour (simple version)
-appRoutes.get('/seymour-lifts', async (req, res) => {
-    const seymourData = await scrapeSeymourLifts();
-    res.json({ lifts: seymourData });
-});
+const { scrapeSeymourAll } = require('./seymour-scraper.js');  // or wherever
 
-// 7d) Advanced: /api/seymour-lifts => runs
-app.get('/api/seymour-lifts', async (req, res) => {
+app.get("/api/seymour-lifts", async (req, res) => {
     try {
-        const seymourRunsData = await scrapeSeymourRuns();
-        res.json({ lifts: seymourRunsData });
+        const fullData = await scrapeSeymourAll();
+        res.json({ lifts: fullData });
     } catch (err) {
-        console.error('Error in /api/seymour-lifts route:', err);
-        res.status(500).json({ error: 'Failed to scrape seymour runs' });
+        console.error("Error in /api/seymour-lifts route:", err);
+        res.status(500).json({ error: "Failed to scrape seymour data" });
     }
 });
 
