@@ -497,9 +497,7 @@ appRoutes.get('/grouse-lifts', async (req, res) => {
 });
 
 // 7c) Seymour (simple version)
-const { scrapeSeymourAll } = require('./seymour-scraper.js');  // or wherever
-
-app.get("/api/seymour-lifts", async (req, res) => {
+appRoutes.get("/api/seymour-lifts", async (req, res) => {
     try {
         const fullData = await scrapeSeymourAll();
         res.json({ lifts: fullData });
