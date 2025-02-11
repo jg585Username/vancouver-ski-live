@@ -49,9 +49,29 @@
             color: #fff;
             font-size: 1rem;
             transition: color 0.3s ease;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
         }
         nav a:hover {
+            display: inline-block;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform: rotate(2deg);
             color: #ddd;
+        }
+
+        nav a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            height: 2px;
+            width: 0%;
+            background-color: currentColor;
+            transition: width 0.3s ease-in-out;
+        }
+        nav a:hover::after {
+            width: 100%;
         }
 
         /* ================ MAIN CONTENT  ================ */
