@@ -221,9 +221,6 @@ async function scrapeGrouseRuns() {
     }
 }
 
-const axios = require("axios");
-const cheerio = require("cheerio");
-
 /**
  * 1) Basic lifts (rawHours)
  */
@@ -497,7 +494,7 @@ appRoutes.get('/grouse-lifts', async (req, res) => {
 });
 
 // 7c) Seymour (simple version)
-appRoutes.get("/api/seymour-lifts", async (req, res) => {
+appRoutes.get("/seymour-lifts", async (req, res) => {
     try {
         const fullData = await scrapeSeymourAll();
         res.json({ lifts: fullData });
