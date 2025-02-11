@@ -444,12 +444,27 @@
         </div>
     </div>
     <!-- =============== END WEBCAMS PANEL =============== -->
+    <script>
+        fetch('/cypress-updates')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not OK');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Assuming data.updates contains your API text
+                document.getElementById('updates-text').innerText = data.updates;
+            })
+            .catch(error => {
+                console.error('Error fetching updates:', error);
+                document.getElementById('updates-text').innerText = 'Unable to load updates at this time.';
+            });
+    </script>
 
     <div class="translucent-panel">
         <h1>❄ Operational Updates</h1>
-        <p>
-            scrapeCypressUpdates();
-        </p>
+        <p id="updates-text"></p>
     </div>
 
     <!-- Lifts Panel -->

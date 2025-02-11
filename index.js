@@ -544,10 +544,10 @@ appRoutes.get('/all-lifts', async (req, res) => {
     });
 });
 
-app.get('/api/cypress-updates', async (req, res) => {
+appRoutes.get('/cypress-updates', async (req, res) => {
     try {
         const updates = await scrapeCypressUpdates();
-        res.json({ updates });
+        res.json({  updates });
     } catch(err) {
         res.status(500).json({ error: 'Error scraping updates.' });
     }
