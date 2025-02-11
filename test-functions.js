@@ -271,3 +271,21 @@ scrapeGrouseRuns().then(data => {
 }).catch(err => {
     console.error("Error testing Grouse:", err);
 });
+
+
+async function scrapeCypressUpdates(){
+    try {
+        const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
+        const { data } = await axios.get(url);
+
+        // Safely access property using optional chaining:
+        const update = data?.comments?.comment?.[0]?.text ?? null;
+        console.log("Update from Cypress Staff:", update);
+        return update;
+    } catch (err) {
+        console.error("Did not receive Cypress Updates", err);
+        return null;
+    }
+}
+
+console.log(scrapeCypressUpdates());
