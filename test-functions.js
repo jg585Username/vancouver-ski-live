@@ -311,3 +311,26 @@ async function scrapeGrouseUpdates() {
 }
 
 console.log(scrapeGrouseUpdates());
+
+async function scrapeSeymourUpdates() {
+    try {
+        // Replace with the actual Seymour Mountain updates URL
+        const url = "https://mtseymour.ca/";  // You might need a more specific URL (e.g., /winter) if required.
+        const { data: html } = await axios.get(url);
+        const $ = cheerio.load(html);
+
+        // Adjust the selector to target the specific element(s) containing the update.
+        const updateText = $('div.clearfix.text-formatted.field.field--name-field-copy.field--type-text-long.field--label-hidden.field__item p')
+            .first()
+            .text()
+            .trim();
+
+        console.log("Seymour Update:", updateText);
+        return updateText || null;
+    } catch (error) {
+        console.error("Error scraping Seymour updates:", error);
+        return null;
+    }
+}
+
+console.log(scrapeSeymourUpdates());
