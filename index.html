@@ -444,28 +444,65 @@
         </div>
     </div>
     <!-- =============== END WEBCAMS PANEL =============== -->
-    <script>
-        fetch('/cypress-updates')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not OK');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Assuming data.updates contains your API text
-                document.getElementById('updates-text').innerText = data.updates;
-            })
-            .catch(error => {
-                console.error('Error fetching updates:', error);
-                document.getElementById('updates-text').innerText = 'Unable to load updates at this time.';
-            });
-    </script>
 
+    <!-- Updated Operational Updates Panel -->
     <div class="translucent-panel">
-        <h1>❄ Operational Updates</h1>
-        <p id="updates-text"></p>
+        <div class="update-nav" style="display: flex; align-items: center; justify-content: space-between;">
+            <button id="left-arrow" aria-label="Previous Mountain" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&#9664;</button>
+            <h1 id="mountain-name">Cypress Operational Updates</h1>
+            <button id="right-arrow" aria-label="Next Mountain" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&#9654;</button>
+        </div>
+        <p id="updates-text">Loading updates...</p>
     </div>
+
+    <script>
+        // Array holding each mountain's name and API endpoint.
+        const mountains = [
+            { name: 'Cypress', endpoint: '/cypress-updates' },
+            { name: 'Seymour', endpoint: '/seymour-updates' },
+            { name: 'Grouse', endpoint: '/grouse-updates' }
+        ];
+
+        let currentIndex = 0;
+        const mountainNameEl = document.getElementById('mountain-name');
+        const updatesTextEl = document.getElementById('updates-text');
+        const leftArrow = document.getElementById('left-arrow');
+        const rightArrow = document.getElementById('right-arrow');
+
+        function loadUpdate(index) {
+            const mountain = mountains[index];
+            mountainNameEl.textContent = `${mountain.name} Operational Updates`;
+            updatesTextEl.textContent = 'Loading updates...';
+
+            fetch(mountain.endpoint)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not OK');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    updatesTextEl.textContent = data.updates || data.update || 'No updates available right now.';
+                })
+                .catch(error => {
+                    console.error(`Error loading update for ${mountain.name}:`, error);
+                    updatesTextEl.textContent = 'Unable to load updates at this time.';
+                });
+        }
+
+        leftArrow.addEventListener('click', () => {
+            currentIndex = (currentIndex - 1 + mountains.length) % mountains.length;
+            loadUpdate(currentIndex);
+        });
+
+        rightArrow.addEventListener('click', () => {
+            currentIndex = (currentIndex + 1) % mountains.length;
+            loadUpdate(currentIndex);
+        });
+
+        // Load the initial update when the page loads.
+        loadUpdate(currentIndex);
+    </script>
 
     <!-- Lifts Panel -->
     <div class="translucent-panel">
@@ -1044,5 +1081,6 @@
 </script>
 </body>
 </html>
+
 
 
