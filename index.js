@@ -236,6 +236,25 @@ async function scrapeGrouseRuns() {
     }
 }
 
+async function scrapeGrouseUpdates() {
+    try {
+        // Replace with the actual Grouse Mountain updates URL
+        const url = "https://www.grousemountain.com/";
+        const { data: html } = await axios.get(url);
+        const $ = cheerio.load(html);
+
+        // Select the element containing the update text.
+        // Adjust the selector if needed based on the actual page structure.
+        const updateText = $('.banner__subtitle.grid_editable').first().text().trim();
+
+        console.log("Grouse Update:", updateText);
+        return updateText || null;
+    } catch (error) {
+        console.error("Error scraping Grouse updates:", error);
+        return null;
+    }
+}
+
 /**
  * 1) Basic lifts (rawHours)
  */
