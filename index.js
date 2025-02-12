@@ -85,7 +85,8 @@ async function scrapeCypressUpdates(){
         const { data } = await axios.get(url);
 
         // Safely access property using optional chaining:
-        const update = data?.comments?.comment?.[0]?.text ?? null;
+        const text = data?.comments?.comment?.[0]?.text ?? null;
+        const update = text.replace(/<[^>]*>/g, '').trim();
         console.log("Update from Cypress Staff:", update);
         return update;
     } catch (err) {
