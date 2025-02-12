@@ -572,6 +572,17 @@ appRoutes.get('/cypress-updates', async (req, res) => {
     }
 });
 
+appRoutes.get('/grouse-updates', async (req, res) => {
+    const update = await scrapeGrouseUpdates();
+    res.json({ update });
+});
+
+appRoutes.get('/seymour-updates', async (req, res) => {
+    const update = await scrapeSeymourUpdates();
+    res.json({ update });
+});
+
+
 // Use appRoutes under /api
 app.use('/api', appRoutes);
 
