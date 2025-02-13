@@ -1,6 +1,6 @@
 async function getWeather() {
     const url =
-        "https://www.onthesnow.com/_next/data/2.6.8_en-US/vancouver/open-resorts.json?region=vancouver";
+        "https://www.onthesnow.com/_next/data/2.6.9_en-US/vancouver/open-resorts.json?region=vancouver";
 
     try {
         const response = await fetch(url);
