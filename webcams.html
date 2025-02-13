@@ -108,26 +108,33 @@
             object-fit: cover;
             border-radius: 8px;
             flex-shrink: 0;
+            cursor: pointer; /* Indicate it's clickable */
         }
 
+        /* ================ LIGHTBOX OVERLAY ================ */
+        #lightbox-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(3px);
+            display: none;               /* hidden by default */
+            align-items: center;         /* center image vertically */
+            justify-content: center;     /* center image horizontally */
+            z-index: 9999;               /* on top of other elements */
+        }
+        #lightbox-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
 
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
                 margin: 1rem;
-            }
-            .logo-gallery {
-                gap: 1.5rem;
-            }
-            .logo-container {
-                width: 120px;
-                height: 120px;
-            }
-            .logo-container img {
-                width: 80px;
-            }
-            .weather-table {
-                min-width: 600px;
             }
         }
     </style>
@@ -150,33 +157,34 @@
 
 <main>
 
+    <!-- Cypress -->
     <div class="translucent-panel">
         <h2>Cypress</h2>
         <h3>Click images to expand</h3>
         <div class="webcam-gallery">
             <img
-                    src="https://i.ytimg.com/vi/OSKgIDnBwwQ/hqdefault.jpg?v=ca5e&sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDwoqOdvfo3P5tsQRf-d9ipH9xSuw"
+                    src="https://i.ytimg.com/vi/OSKgIDnBwwQ/hqdefault.jpg?v=ca5e"
                     width="413"
                     height="232.333"
                     alt="Cypress base webcam"
             />
 
             <img
-                    src="https://i.ytimg.com/vi/lLELhY85VxI/hqdefault.jpg?v=7c6a&sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAuTgrPbA654fwh4zchT5V4NPDcsw"
+                    src="https://i.ytimg.com/vi/lLELhY85VxI/hqdefault.jpg?v=7c6a"
                     width="413"
                     height="232.333"
                     alt="Cypress Lions webcam"
             />
 
             <img
-                    src="https://i.ytimg.com/vi/GTQQdQ8VVKI/hqdefault.jpg?v=bc49&sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDIVA6f42jC9fi8IQz97wvUy-rafg"
+                    src="https://i.ytimg.com/vi/GTQQdQ8VVKI/hqdefault.jpg?v=bc49"
                     width="413"
                     height="232.333"
                     alt="Cypress Eagle webcam"
             />
 
             <img
-                    src="https://i.ytimg.com/vi/DXyS3CxYtw0/hqdefault.jpg?v=5941&sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDfunNyNIiuhtMIBA2SUDpWcNNONw"
+                    src="https://i.ytimg.com/vi/DXyS3CxYtw0/hqdefault.jpg?v=5941"
                     width="413"
                     height="232.333"
                     alt="Cypress Snow stake webcam"
@@ -184,6 +192,7 @@
         </div>
     </div>
 
+    <!-- Grouse -->
     <div class="translucent-panel">
         <h2>Grouse</h2>
         <h3>Click images to expand</h3>
@@ -218,6 +227,7 @@
         </div>
     </div>
 
+    <!-- Seymour -->
     <div class="translucent-panel">
         <h2>Seymour</h2>
         <h3>Click images to expand</h3>
@@ -233,8 +243,34 @@
 
 </main>
 
-<script>
+<!-- This is the overlay that we'll show and hide dynamically. -->
+<div id="lightbox-overlay">
+    <img id="lightbox-img" src="" alt="Enlarged webcam image">
+</div>
 
+<script>
+    // Select all webcam images
+    const allImages = document.querySelectorAll('.webcam-gallery img');
+    const overlay = document.getElementById('lightbox-overlay');
+    const overlayImg = document.getElementById('lightbox-img');
+
+    // For each image, when clicked, show overlay with that image's src
+    allImages.forEach(img => {
+        img.addEventListener('click', () => {
+            overlay.style.display = 'flex';   // show overlay
+            overlayImg.src = img.src;         // set the large image source
+        });
+    });
+
+    // Close the overlay when user clicks on the dark background
+    overlay.addEventListener('click', (event) => {
+        // if clicked exactly on the overlay (not the image), then hide
+        if (event.target === overlay) {
+            overlay.style.display = 'none';
+            overlayImg.src = '';
+        }
+    });
 </script>
 </body>
 </html>
+
