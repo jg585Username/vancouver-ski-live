@@ -83,7 +83,7 @@
             padding-bottom: 2rem;
         }
         .translucent-panel {
-            max-width: 900px;
+            max-width: 2000px;
             width: 90%;
             background-color: rgba(0, 0, 0, 0.5);
             color: #fff;
@@ -101,6 +101,30 @@
             font-size: 0.9rem;
             color: #ccc;
             margin: 0.5rem 0 1.5rem;
+        }
+
+        .webcam-gallery {
+            display: flex;            /* Make it a flex container */
+            flex-wrap: wrap;          /* Allow wrapping if not enough horizontal space */
+            gap: 1rem;                /* Spacing between figures */
+            justify-content: center;  /* Center them on the page */
+        }
+
+        .webcam-gallery figure {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+            /* Optional: Force consistent width for each figure
+               and let the images scale accordingly */
+            flex: 1 0 300px;
+            max-width: 320px;
+        }
+
+        .webcam-gallery figure img {
+            width: 100%;    /* Make image width fill the figure */
+            height: auto;   /* Maintain aspect ratio */
+            cursor: pointer;
         }
 
         /* webcam */
@@ -159,8 +183,8 @@
 
     <!-- Cypress -->
     <div class="translucent-panel">
-        <h2>To Grouse and Cypress: HWY 1 and BC-99 (West)</h2>
-        <h3>Click images to expand</h3>
+        <h2>HWY 1 and BC-99 (West)</h2>
+        <h3 style="text-align:center;">Click images to expand - Updates every 20 minutes</h3>
         <div class="webcam-gallery">
             <figure>
                 <img
@@ -169,28 +193,32 @@
                         height="232.333"
                 />
                 <figcaption> Highway 1 at the south end of Ironworkers Memorial Bridge </figcaption>
-
+            </figure>
+            <figure>
                 <img
-                        src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/852.jpg"
-                        width="413"
-                        height="232.333"
-                />
-                <figcaption> Northend of Ironworkers Memorial Bridge by Fern Street </figcaption>
-
+                            src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/852.jpg"
+                            width="413"
+                            height="232.333"
+                    />
+                    <figcaption> Northend of Ironworkers Memorial Bridge by Fern Street </figcaption>
+            </figure>
+            <figure>
                 <img
-                        src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/853.jpg"
-                        width="413"
-                        height="232.333"
-                />
+                            src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/853.jpg"
+                            width="413"
+                            height="232.333"
+                    />
                 <figcaption> Mountain Highway exit, looking north </figcaption>
-
+            </figure>
+            <figure>
                 <img
                         src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/1006.jpg"
                         width="413"
                         height="232.333"
                 />
                 <figcaption> Lynn Valley Road on-ramp (West) </figcaption>
-
+            </figure>
+            <figure>
                 <img
                         src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/615.jpg"
                         width="413"
@@ -198,15 +226,22 @@
                 />
                 <figcaption> Upper Levels Highway at Lonsdale Avenue (West) </figcaption>
             </figure>
-
-        </div>
-    </div>
-
-    <!-- Grouse -->
-    <div class="translucent-panel">
-        <h2>Mt Seymour Pkwy</h2>
-        <h3>Click images to expand</h3>
-        <div class="webcam-gallery">
+            <figure>
+                <img
+                        src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/623.jpg"
+                        width="413"
+                        height="232.333"
+                />
+                <figcaption> Upper Levels Highway at Capilano Road (West) </figcaption>
+            </figure>
+            <figure>
+                <img
+                        src="https://cache.drivebc.ca/bchighwaycam/pub/cameras/662.jpg"
+                        width="413"
+                        height="232.333"
+                />
+                <figcaption> Hwy 1 Hadden Drive off-ramp for Taylor Way (West) </figcaption>
+            </figure>
 
         </div>
     </div>
