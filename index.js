@@ -87,10 +87,10 @@ async function scrapeCypressUpdates(){
         // Safely access property using optional chaining:
         const text = data?.comments?.comment?.[0]?.text ?? null;
         const update = text.replace(/<br\s*\/?>/g, '\n')   // turn <br> into newlines
-            .replace(/<[^>]+>/g, '')        // remove other tags like <b> or <p>
-            .replace(/&bull;/g, '•')        // convert bullet entity
-            .replace(/&nbsp;/g, ' ')        // convert non-breaking space if any
-            .replace(/\s{2,}/g, ' ')        // multiple spaces => single space
+            .replace(/<[^>]+>/g, '')        
+            .replace(/&bull;/g, '•')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/\s{2,}/g, ' ')
             .trim();
         console.log("Update from Cypress Staff:", update);
         return update;
