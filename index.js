@@ -86,11 +86,14 @@ async function scrapeCypressUpdates(){
 
         // Safely access property using optional chaining:
         const text = data?.comments?.comment?.[0]?.text ?? null;
-        const update = text.replace(/<br\s*\/?>/g, '\n')   // turn <br> into newlines
-            .replace(/<[^>]+>/g, '')        
+        const update = text
+            .replace(/<br\s*\/?>/g, '\n')   // turn <br> into newlines
+            .replace(/<[^>]+>/g, '')
             .replace(/&bull;/g, '•')
             .replace(/&nbsp;/g, ' ')
             .replace(/\s{2,}/g, ' ')
+            .trim()
+            .split("PARKING")[0]
             .trim();
         console.log("Update from Cypress Staff:", update);
         return update;
