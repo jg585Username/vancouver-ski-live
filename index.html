@@ -671,23 +671,22 @@
             const lowerLiftName = liftName.toLowerCase();
             let imageUrl = null;
 
-            // First set of keywords for chairlift-4.svg
             const keywordsSet1 = ["lions", "eagle", "raven", "sky", "easy", "greenway", "olympic", "peak", "lodge"];
             if (keywordsSet1.some(keyword => lowerLiftName.includes(keyword))) {
                 imageUrl = 'https://feed-icons-dbgxg7hrccgddubp.a03.azurefd.net/Feed/Default/Lift/Type/chairlift-4.svg';
             }
-            // Second set of keywords for chairlift-2.svg
             else if (["midway", "brockton"].some(keyword => lowerLiftName.includes(keyword))) {
                 imageUrl = 'https://feed-icons-dbgxg7hrccgddubp.a03.azurefd.net/Feed/Default/Lift/Type/chairlift-2.svg';
             }
 
-            // If an image URL was found, create and append the image element
             if (imageUrl) {
                 const iconImg = document.createElement('img');
                 iconImg.src = imageUrl;
                 iconImg.alt = "lift icon";
-                iconImg.classList.add('lift-icon'); // optional, for styling
-                // Append image before the lift name text
+                iconImg.style.width = '20px';
+                iconImg.style.height = '20px';
+                iconImg.style.marginRight = '5px';
+                iconImg.style.verticalAlign = 'middle';
                 nameEl.appendChild(iconImg);
             }
 
