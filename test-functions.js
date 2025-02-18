@@ -375,7 +375,6 @@ async function scrapeEyeballReports() {
     }
 }
 
-// Example usage:
 scrapeEyeballReports().then(reports => {
     console.log('Eyeball Reports:', reports);
 });
