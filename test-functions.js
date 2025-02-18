@@ -354,12 +354,20 @@ async function scrapeEyeballReports() {
 
         // Select all paragraph elements with the class 'eyeball-reports__text'
         const reportParagraphs = $('p.eyeball-reports__text');
+        // Select all elements with the class 'eyeball-reports__published'
+        const publishedElements = $('.eyeball-reports__published');
 
-        // Extract and return the text content from each paragraph
+        // Extract and combine the text content from each report and published element
         const reports = [];
         reportParagraphs.each((i, element) => {
-            reports.push($(element).text().trim());
+            const reportText = $(element).text().trim();
+            const publishedText = $(publishedElements[i]).text().trim();
+            reports.push({
+                reportText,
+                publishedText
+            });
         });
+
         return reports;
     } catch (error) {
         console.error('Error fetching or parsing the HTML:', error);
