@@ -646,6 +646,10 @@ appRoutes.get('/seymour-updates', async (req, res) => {
     res.json({ update });
 });
 
+app.get('/api/snow-reports', async (req, res) => {
+    const reports = await scrapeEyeballReports();
+    res.json(reports);
+});
 
 // Use appRoutes under /api
 app.use('/api', appRoutes);
