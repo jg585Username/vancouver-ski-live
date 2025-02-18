@@ -368,12 +368,20 @@ async function scrapeEyeballReports() {
             });
         });
 
-        return reports;
+        // Remove duplicate entries (keeping only the first occurrence)
+        const uniqueReports = reports.filter((report, index, self) =>
+                index === self.findIndex(r =>
+                    r.reportText === report.reportText && r.publishedText === report.publishedText
+                )
+        );
+
+        return uniqueReports;
     } catch (error) {
         console.error('Error fetching or parsing the HTML:', error);
         return [];
     }
 }
+
 
 scrapeEyeballReports().then(reports => {
     console.log('Eyeball Reports:', reports);
