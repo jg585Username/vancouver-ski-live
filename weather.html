@@ -156,21 +156,51 @@
 </header>
 
 <main>
-
     <div class="translucent-panel">
         <h1>Weather ❅</h1>
         <h2>Forecast Updates</h2>
     </div>
 
-    <div class="translucent-panel">
+    <!-- Panel for Snow Reports -->
+    <div class="translucent-panel" id="snow-reports-panel">
         <h1 style="font-size: 21px;">Latest snow reports</h1>
+        <div id="reports-container">
+            <!-- Scraped reports will be inserted here -->
+            <p>Loading reports...</p>
+        </div>
     </div>
-
 </main>
 
-
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Replace '/api/snow-reports' with your actual endpoint that returns scraped data as JSON.
+        fetch('/api/snow-reports')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('reports-container');
+                // Clear the loading message
+                container.innerHTML = '';
 
+                if (data.length === 0) {
+                    container.innerHTML = '<p>No snow reports available at this time.</p>';
+                } else {
+                    // Create an unordered list of reports.
+                    const ul = document.createElement('ul');
+                    data.forEach(report => {
+                        const li = document.createElement('li');
+                        // Customize how you want to display reportText and publishedText.
+                        li.innerHTML = `<strong>${report.reportText}</strong> <em>(${report.publishedText})</em>`;
+                        ul.appendChild(li);
+                    });
+                    container.appendChild(ul);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching snow reports:', error);
+                document.getElementById('reports-container').innerHTML = '<p>Error loading reports.</p>';
+            });
+    });
 </script>
+
 </body>
 </html>
