@@ -340,3 +340,35 @@ async function scrapeSeymourUpdates() {
 }
 
 console.log(scrapeSeymourUpdates());
+
+async function scrapeEyeballReports() {
+    const url = 'https://www.snow-forecast.com/resorts/Cypress-Mountain/6day/bot';
+
+    try {
+        // Fetch the HTML content from the URL
+        const response = await fetch(url);
+        const htmlText = await response.text();
+
+        // Load the HTML into Cheerio
+        const $ = cheerio.load(htmlText);
+
+        // Select all paragraph elements with the class 'eyeball-reports__text'
+        const reportParagraphs = $('p.eyeball-reports__text');
+
+        // Extract and return the text content from each paragraph
+        const reports = [];
+        reportParagraphs.each((i, element) => {
+            reports.push($(element).text().trim());
+        });
+        return reports;
+    } catch (error) {
+        console.error('Error fetching or parsing the HTML:', error);
+        return [];
+    }
+}
+
+// Example usage:
+scrapeEyeballReports().then(reports => {
+    console.log('Eyeball Reports:', reports);
+});
+
