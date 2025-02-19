@@ -551,6 +551,10 @@ async function scrapeEyeballReports() {
                 )
         );
 
+        if (uniqueReports.length === 0) {
+            return [{ reportText: "No snow reports to show", publishedText: "" }];
+        }
+
         return uniqueReports;
     } catch (error) {
         console.error('Error fetching or parsing the HTML:', error);
