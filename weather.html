@@ -156,29 +156,24 @@
 </header>
 
 <main>
-    <div class="translucent-panel">
-        <h1>Weather ❅</h1>
-        <h2>Forecast Updates</h2>
-    </div>
 
-    <!-- Panel for Snow Reports -->
     <div class="translucent-panel" id="snow-reports-panel">
-        <h1 style="font-size: 21px;">Latest snow reports</h1>
+        <h1 style="font-size: 27px;">❅ Latest snow reports</h1>
         <div id="reports-container">
             <p>Loading reports...</p>
         </div>
     </div>
 
     <div class="translucent-panel">
-        <h1>Cypress</h1>
+        <h1 style="font-size: 24px;">Cypress</h1>
     </div>
 
     <div class="translucent-panel">
-        <h1>Grouse</h1>
+        <h1 style="font-size: 24px;">Grouse</h1>
     </div>
 
     <div class="translucent-panel">
-        <h1>Cypress</h1>
+        <h1 style="font-size: 24px;">Seymour</h1>
     </div>
 </main>
 
@@ -200,7 +195,7 @@
                     data.forEach(report => {
                         const li = document.createElement('li');
                         // Customize how you want to display reportText and publishedText.
-                        li.innerHTML = `<strong>${report.reportText}</strong> <em>(${report.publishedText})</em>`;
+                        li.innerHTML = `<strong>${report.reportText}</strong> <em>(${report.publishedText})</em><br><br/>`;
                         ul.appendChild(li);
                     });
                     container.appendChild(ul);
