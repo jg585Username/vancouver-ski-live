@@ -654,10 +654,26 @@
      * LIFT LOGIC
      ***********************************************/
     const liftContainer = document.getElementById('liftContainer');
-
+    let activeResort = null;
     function displayLifts(lifts, resortName) {
-        liftContainer.innerHTML = '';
+        // If the user clicks on the same resort that's currently active...
+        if (activeResort === resortName) {
+            // If there's currently something in the container, clear it (hide lifts)
+            if (liftContainer.innerHTML.trim().length > 0) {
+                liftContainer.innerHTML = '';
+                activeResort = null;  // No active resort now
+                return;
+            }
+            // Otherwise, if it's empty, show them again (edge case)
+            // (but typically once you clear them, you won't call this again without data)
+        } else {
+            // User clicked a *different* resort logo
+            // Clear out any existing lifts before showing new ones
+            liftContainer.innerHTML = '';
+            activeResort = resortName;  // Update which resort is now active
+        }
 
+        // Now, build the DOM elements for each lift
         lifts.forEach(lift => {
             const liftBox = document.createElement('div');
             liftBox.classList.add('lift-box');
@@ -669,15 +685,14 @@
             // Create the h2 element for the lift name
             const nameEl = document.createElement('h2');
 
-            // Determine the image based on the keywords
+            // Determine icon based on keywords
             const lowerLiftName = liftName.toLowerCase();
             let imageUrl = null;
 
             const keywordsSet1 = ["lions", "eagle", "raven", "sky", "easy", "greenway", "olympic", "peak", "lodge"];
             if (keywordsSet1.some(keyword => lowerLiftName.includes(keyword))) {
                 imageUrl = 'https://feed-icons-dbgxg7hrccgddubp.a03.azurefd.net/Feed/Default/Lift/Type/chairlift-4.svg';
-            }
-            else if (["midway", "brockton"].some(keyword => lowerLiftName.includes(keyword))) {
+            } else if (["midway", "brockton"].some(keyword => lowerLiftName.includes(keyword))) {
                 imageUrl = 'https://feed-icons-dbgxg7hrccgddubp.a03.azurefd.net/Feed/Default/Lift/Type/chairlift-2.svg';
             }
 
@@ -716,6 +731,7 @@
                 liftBox.appendChild(timesEl);
             }
 
+            // Grouse fallback hours if open
             if (
                 resortName === 'grouse' &&
                 !lift.openTime &&
@@ -735,7 +751,7 @@
                 liftBox.appendChild(hoursEl);
             }
 
-            // If Cypress runs exist, we show them in modal on click
+            // If Cypress runs exist, show them in a modal on click
             if (Array.isArray(lift.runs) && lift.runs.length > 0) {
                 liftBox.addEventListener('click', () => {
                     showRunsModal(liftName, lift.runs);
