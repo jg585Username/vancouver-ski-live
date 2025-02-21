@@ -634,8 +634,10 @@
             statusSpan.textContent = run.runStatus ? `(${run.runStatus})` : '';
             if (run.runStatus && run.runStatus.toLowerCase().includes('open')) {
                 statusSpan.style.color = 'green';
-            } else {
+            } if (run.runStatus && run.runStatus.toLowerCase().includes('close')) {
                 statusSpan.style.color = 'red';
+            } if (run.runStatus && run.runStatus.toLowerCase().includes('partially')){
+                statusSpan.style.color = 'yellow';
             }
 
             row.appendChild(nameSpan);
