@@ -129,6 +129,13 @@
             flex-shrink: 0;
         }
 
+        .paragraphs-section {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 1rem;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+
         /* ================ LIFT BOXES ================ */
         .lift-container {
             display: flex;
@@ -459,7 +466,7 @@
             <h1 id="mountain-name">Cypress Operational Updates</h1>
             <button id="right-arrow" aria-label="Next Mountain" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&#9654;</button>
         </div>
-        <p style="text-align: center" id="updates-text">Loading updates...</p>
+        <p class="paragraphs-section" style="text-align: center" id="updates-text">Loading updates...</p>
     </div>
 
     <script>
