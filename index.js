@@ -375,8 +375,12 @@ async function scrapeSeymourRuns() {
                 const $article = $(article);
                 const runName = $article.find(".cell.title").text().trim();
 
-                const difficulty = $article.find(".f-icon.icon.level").attr("title") || "Unknown";
+                // This might return strings like "Green Circle", "Blue Square", "Black Diamond", etc.
+                const difficultyRaw = $article.find(".f-icon.icon.level").attr("title") || "Unknown";
+                // We can normalize difficulty here:
+                let difficulty = difficultyRaw;
 
+                // Decide day/night status from the .cell.status elements
                 const statusCells = $article.find(".cell.status");
                 let dayStatus = "Closed";
                 let nightStatus = "Closed";
@@ -390,10 +394,24 @@ async function scrapeSeymourRuns() {
                     nightStatus = $nightIcon.hasClass("status-open") ? "Open" : "Closed";
                 }
 
+                // Select the correct icon based on difficulty
+                let difficultyIconUrl = '';
+                const diffLower = difficulty.toLowerCase();
+                if (diffLower.includes("beginner")) {
+                    difficultyIconUrl = 'images/beginner.svg';
+                } else if (diffLower.includes("intermediate")) {
+                    difficultyIconUrl = 'images/intermediate.svg';
+                } else if (diffLower.includes("expert")) { //Don't think Seymour has any double blacks though
+                    difficultyIconUrl = 'images/expert.svg';
+                } else if (diffLower.includes("advanced")) {
+                    difficultyIconUrl = 'images/advanced.svg';
+                }
+
                 allRuns.push({
                     liftName,
                     runName,
                     difficulty,
+                    difficultyIconUrl,
                     dayStatus,
                     nightStatus
                 });
@@ -405,7 +423,7 @@ async function scrapeSeymourRuns() {
          */
         const liftsMap = {};
         allRuns.forEach((run) => {
-            const { liftName, runName, difficulty, dayStatus, nightStatus } = run;
+            const { liftName, runName, difficulty, difficultyIconUrl, dayStatus, nightStatus } = run;
 
             if (!liftsMap[liftName]) {
                 liftsMap[liftName] = {
@@ -427,11 +445,9 @@ async function scrapeSeymourRuns() {
             liftsMap[liftName].runs.push({
                 runName,
                 difficulty,
+                difficultyIconUrl,
                 runStatus: combinedStatus
             });
-
-            // If *every* run is closed, you might eventually set liftStatus=Closed,
-            // but you would need extra logic for that. Right now we just say "Open".
         });
 
         return Object.values(liftsMap);
