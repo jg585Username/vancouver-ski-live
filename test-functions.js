@@ -387,3 +387,43 @@ scrapeEyeballReports().then(reports => {
     console.log('Eyeball Reports:', reports);
 });
 
+async function scrapesBackcountryInfo() {
+    try {
+        const url = 'https://opensnow.com/avalanche/2eed5e9c3bd0ef7958755c829723bd0d820795204ab91687e7c2005265f62e81';
+
+        // Fetch the HTML content from the webpage
+        const { data: html } = await axios.get(url);
+
+        // Load into Cheerio
+        const $ = cheerio.load(html);
+
+        // 1) Scrape the avalanche rating image src
+        //    This <img> is typically found under the ".AvalancheForecast__dangerHeader" selector.
+        const ratingImg = $('.AvalancheForecast__dangerHeader img').attr('src') || '';
+
+        // 2) Scrape all paragraphs that appear within '.AvalancheForecast__summaryText'
+        const paragraphs = [];
+        $('.AvalancheForecast__summaryText p').each((i, el) => {
+            paragraphs.push($(el).text().trim());
+        });
+
+        // Print out the results
+        console.log('Avalanche Rating Image:', ratingImg);
+        console.log('Paragraphs under Avalanche Forecast:');
+        paragraphs.forEach((p, index) => {
+            console.log(`Paragraph #${index + 1}: ${p}`);
+        });
+
+        // Optional: return the data if you want to use it elsewhere
+        return {
+            ratingImg,
+            paragraphs,
+        };
+    } catch (err) {
+        console.error('Error scraping backcountry info:', err);
+        return null;
+    }
+}
+
+// Example usage
+scrapesBackcountryInfo();
