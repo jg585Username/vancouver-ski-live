@@ -131,6 +131,43 @@
             border-radius: 8px;
         }
 
+        .backcountry-info {
+            display: flex;
+            flex-direction: column; /* Stack rating and paragraphs vertically on smaller screens */
+            gap: 1.5rem;
+            text-align: left;       /* Align text left for paragraphs */
+            margin-top: 1rem;
+        }
+
+        /* You can further separate the rating & paragraphs */
+        .rating-section {
+            text-align: center;     /* Center the rating image, heading, etc. */
+        }
+
+        .rating-section h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-section img {
+            /* Let’s give the image a better presence */
+            max-width: 120px;
+            margin: 0.5rem auto 0 auto;
+            display: none;          /* Hide by default; we’ll show it in JS if a URL is found */
+            border: 3px solid #fff;
+            border-radius: 8px;
+        }
+
+        /* Paragraphs container styling */
+        .paragraphs-section {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 1rem;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+        .paragraphs-section p {
+            margin-bottom: 1rem;
+        }
+
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
@@ -182,18 +219,18 @@
         <!-- Add your Seymour data here or below -->
     </div>
 
-    <!-- BACKCOUNTRY -->
-    <div class="translucent-panel">
-        <h1 style="font-size: 24px;">Backcountry</h1>
-        <!-- Avalanche Rating Image -->
-        <div style="text-align: center;">
-            <img id="avalanche-rating-img" src="" alt="Avalanche Rating" style="max-width: 100px; display: none; margin-bottom: 1rem;">
-        </div>
-        <!-- Paragraph Text Container -->
-        <div id="backcountry-container">
-            <p>Loading backcountry info...</p>
+    <div class="translucent-panel" id="backcountry-panel">
+        <h1>Backcountry</h1>
+        <div class="backcountry-info">
+            <div class="rating-section">
+                <h2>Avalanche Rating</h2>
+                <img id="avalanche-rating-img" src="" alt="Avalanche Rating" />
+            </div>
+            <div class="paragraphs-section" id="backcountry-container">
+            </div>
         </div>
     </div>
+
 
 </main>
 
@@ -245,18 +282,18 @@
                     return;
                 }
 
-                // 1) Set the avalanche rating image
+                // Show the avalanche rating image if we have a URL
                 if (data.ratingImg) {
                     ratingImgEl.src = data.ratingImg;
-                    ratingImgEl.style.display = 'block';  // Make it visible
+                    ratingImgEl.style.display = 'block'; // reveal the image
                 }
 
-                // 2) Display the paragraphs
+                // Display each paragraph as a separate <p>
                 if (Array.isArray(data.paragraphs) && data.paragraphs.length > 0) {
-                    data.paragraphs.forEach((paragraph) => {
-                        const pEl = document.createElement('p');
-                        pEl.textContent = paragraph;
-                        backcountryContainer.appendChild(pEl);
+                    data.paragraphs.forEach(paragraph => {
+                        const p = document.createElement('p');
+                        p.textContent = paragraph;
+                        backcountryContainer.appendChild(p);
                     });
                 } else {
                     backcountryContainer.innerHTML = '<p>No additional backcountry paragraphs found.</p>';
