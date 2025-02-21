@@ -656,19 +656,13 @@
     const liftContainer = document.getElementById('liftContainer');
     let activeResort = null;
     function displayLifts(lifts, resortName) {
-        // If the user clicks on the same resort that's currently active...
         if (activeResort === resortName) {
-            // If there's currently something in the container, clear it (hide lifts)
             if (liftContainer.innerHTML.trim().length > 0) {
                 liftContainer.innerHTML = '';
                 activeResort = null;  // No active resort now
                 return;
             }
-            // Otherwise, if it's empty, show them again (edge case)
-            // (but typically once you clear them, you won't call this again without data)
         } else {
-            // User clicked a *different* resort logo
-            // Clear out any existing lifts before showing new ones
             liftContainer.innerHTML = '';
             activeResort = resortName;  // Update which resort is now active
         }
