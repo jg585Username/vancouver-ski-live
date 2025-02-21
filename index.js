@@ -35,7 +35,7 @@ async function scrapeCypressLifts() {
                     ? trailsArr.map(tr => ({
                         runName: tr.name,
                         runStatus: tr.status,
-                        difficulty: tr.difficulty, // e.g. "Novice"
+                        difficulty: tr.difficulty,
                         difficultyIconUrl: trailDifficultyIcons[tr.difficultyIcon]?.image || null
                     }))
                     : [];
