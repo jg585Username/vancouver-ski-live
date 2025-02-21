@@ -365,22 +365,37 @@ async function scrapeSeymourRuns() {
 
         const allRuns = [];
 
-        sections.each((i, section) => {
+        sections.each((_, section) => {
             const $section = $(section);
             const liftName = $section.find("th").first().text().trim();
             const $runsRow = $section.next("tr.border-none");
             const runArticles = $runsRow.find("article.node--type-trail.node--view-mode-row");
 
-            runArticles.each((j, article) => {
+            runArticles.each((_, article) => {
                 const $article = $(article);
-                const runName = $article.find(".cell.title").text().trim();
 
-                // This might return strings like "Green Circle", "Blue Square", "Black Diamond", etc.
+                // Original run name text (might contain "Level: ...")
+                let runNameRaw = $article.find(".cell.title").text().trim();
+
+                // Difficulty raw text, e.g. "Green Circle", "Blue Square", etc.
                 const difficultyRaw = $article.find(".f-icon.icon.level").attr("title") || "Unknown";
-                // We can normalize difficulty here:
+
+                // ---- CLEAN THE RUN NAME ----
+                // 1) Remove "Level: ..." if present
+                runNameRaw = runNameRaw.replace(/Level:\s*\S+/gi, '').trim();
+                // 2) Also remove known difficulty words from the run name
+                //    (this covers scenarios like "Intermediate", "Green Circle", "Double Black Diamond", etc.)
+                const knownDifficulties = ["Green", "Blue", "Intermediate", "Black Diamond", "Double Black Diamond"];
+                knownDifficulties.forEach(diff => {
+                    const regex = new RegExp(diff, 'gi');
+                    runNameRaw = runNameRaw.replace(regex, '').trim();
+                });
+                // Now we have a cleaner run name (e.g. "Gun Barrel")
+
+                // Normalize difficulty for internal use
                 let difficulty = difficultyRaw;
 
-                // Decide day/night status from the .cell.status elements
+                // Determine day/night status
                 const statusCells = $article.find(".cell.status");
                 let dayStatus = "Closed";
                 let nightStatus = "Closed";
@@ -394,14 +409,15 @@ async function scrapeSeymourRuns() {
                     nightStatus = $nightIcon.hasClass("status-open") ? "Open" : "Closed";
                 }
 
-                // Select the correct icon based on difficulty
+                // ---- SELECT DIFFICULTY ICON ----
                 let difficultyIconUrl = '';
                 const diffLower = difficulty.toLowerCase();
                 if (diffLower.includes("beginner")) {
                     difficultyIconUrl = 'images/beginner.svg';
                 } else if (diffLower.includes("intermediate")) {
                     difficultyIconUrl = 'images/intermediate.svg';
-                } else if (diffLower.includes("expert")) { //Don't think Seymour has any double blacks though
+                } else if (diffLower.includes("expert")) {
+                    // check double black first, to avoid partial matches
                     difficultyIconUrl = 'images/expert.svg';
                 } else if (diffLower.includes("advanced")) {
                     difficultyIconUrl = 'images/advanced.svg';
@@ -409,7 +425,8 @@ async function scrapeSeymourRuns() {
 
                 allRuns.push({
                     liftName,
-                    runName,
+                    // The cleaned run name
+                    runName: runNameRaw,
                     difficulty,
                     difficultyIconUrl,
                     dayStatus,
@@ -418,9 +435,7 @@ async function scrapeSeymourRuns() {
             });
         });
 
-        /**
-         * Build an array of lifts with runs
-         */
+        // Build an array of lifts with runs
         const liftsMap = {};
         allRuns.forEach((run) => {
             const { liftName, runName, difficulty, difficultyIconUrl, dayStatus, nightStatus } = run;
@@ -428,13 +443,12 @@ async function scrapeSeymourRuns() {
             if (!liftsMap[liftName]) {
                 liftsMap[liftName] = {
                     liftName,
-                    // We'll default all lifts to "Open" then possibly override below if needed
                     liftStatus: "Open",
                     runs: []
                 };
             }
 
-            // Decide run's combined status
+            // Combine day/night status
             let combinedStatus = "Closed";
             if (dayStatus === "Open" && nightStatus === "Open") {
                 combinedStatus = "Open";
@@ -451,11 +465,13 @@ async function scrapeSeymourRuns() {
         });
 
         return Object.values(liftsMap);
+
     } catch (err) {
         console.error("Error scraping Seymour runs:", err);
         return [];
     }
 }
+
 
 /**
  * 3) Combine the two so each lift has runs + rawHours
