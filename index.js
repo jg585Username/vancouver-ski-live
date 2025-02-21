@@ -196,7 +196,25 @@ async function scrapeGrouseRuns() {
                 difficulty = "Double Black Diamond";
             }
 
-            allRuns.push({ runName, difficulty, runStatus });
+            // Select the correct icon based on difficulty
+            let difficultyIconUrl = '';
+            if (difficulty === "Green") {
+                difficultyIconUrl = 'images/beginner.svg';
+            } else if (difficulty === "Blue") {
+                difficultyIconUrl = 'images/intermediate.svg';
+            } else if (difficulty === "Black Diamond") {
+                difficultyIconUrl = 'images/advanced.svg';
+            } else if (difficulty === "Double Black Diamond") {
+                difficultyIconUrl = 'images/expert.svg';
+            }
+
+            // Push the run object (with the icon URL included)
+            allRuns.push({
+                runName,
+                difficulty,
+                runStatus,
+                difficultyIconUrl
+            });
         });
 
         // Map run => lift
@@ -225,7 +243,7 @@ async function scrapeGrouseRuns() {
         const liftsMap = {};
 
         allRuns.forEach(run => {
-            const { runName, difficulty, runStatus } = run;
+            const { runName, difficulty, runStatus, difficultyIconUrl } = run;
             const liftName = mapRunToLift(runName, runToLiftMap);
 
             if (!liftsMap[liftName]) {
@@ -235,15 +253,24 @@ async function scrapeGrouseRuns() {
                     runs: []
                 };
             }
-            liftsMap[liftName].runs.push({ runName, difficulty, runStatus });
+
+            // Push the run info (including the difficulty icon) into the correct lift
+            liftsMap[liftName].runs.push({
+                runName,
+                difficulty,
+                runStatus,
+                difficultyIconUrl
+            });
         });
 
         return Object.values(liftsMap);
+
     } catch (err) {
         console.error('Error scraping Grouse runs:', err);
         return [];
     }
 }
+
 
 async function scrapeGrouseUpdates() {
     try {
