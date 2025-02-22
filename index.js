@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const express = require('express');
-
+const fetch = require('node-fetch');
 const app = express();
 const PORT = 3000;
 
