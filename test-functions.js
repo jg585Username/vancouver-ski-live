@@ -406,7 +406,25 @@ async function scrapesBackcountryInfo() {
         $('.AvalancheForecast__summaryText p').each((i, el) => {
             paragraphs.push($(el).text().trim());
         });
+        const validityContainer = $('.tw-p-5 .tw-text-xs.tw-mb-2.5');
 
+        const date = {};
+        if (validityContainer.length > 0) {
+            // The container typically has two <span> elements and one <small>
+            const spanElements = validityContainer.find('span');
+            const smallElement = validityContainer.find('small').first();
+
+            date.validFrom = spanElements.eq(0).text().trim();  // "Valid Thu Feb 20 4:00pm PST"
+            date.postedAgo = smallElement.text().trim();        // "19 hours ago"
+            date.validUntil = spanElements.eq(1).text().trim();   // "Until Fri Feb 21 4:00pm PST"
+        } else {
+            // Fallback values if the container is not found
+            date.validFrom = '';
+            date.postedAgo = '';
+            date.validUntil = '';
+        }
+
+        console.log(date);
         // Print out the results
         console.log('Avalanche Rating Image:', ratingImg);
         console.log('Paragraphs under Avalanche Forecast:');
