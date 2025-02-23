@@ -59,7 +59,6 @@
             transform: rotate(2deg);
             color: #ddd;
         }
-
         nav a::after {
             content: "";
             position: absolute;
@@ -168,10 +167,25 @@
             margin-bottom: 1rem;
         }
 
+        /* Slideshow container styling if needed */
+        #slideshow-image {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+        }
+
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
                 margin: 1rem;
+            }
+
+            /* Stack paragraph & slideshow vertically on small screens */
+            .reports-slideshow-container {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -196,9 +210,21 @@
     <!-- SNOW REPORTS PANEL -->
     <div class="translucent-panel" id="snow-reports-panel">
         <h1 style="font-size: 27px;">❅ Latest snow reports</h1>
-        <div class="paragraphs-section" id="reports-container">
-            <p>Loading reports...</p>
+
+        <!--
+          Flex container for the text (left) & slideshow (right)
+        -->
+        <div class="reports-slideshow-container" style="display: flex; gap: 1rem;">
+            <!-- Text container (left side) -->
+            <div class="paragraphs-section" id="reports-container" style="flex: 1;">
+                <p>Loading reports...</p>
             </div>
+
+            <!-- Slideshow container (right side) -->
+            <div style="flex: 1; display: flex; justify-content: center; align-items: center;">
+                <img id="slideshow-image" alt="Slideshow" />
+            </div>
+        </div>
     </div>
 
     <!-- CYPRESS -->
@@ -219,6 +245,7 @@
         <!-- Add your Seymour data here or below -->
     </div>
 
+    <!-- BACKCOUNTRY -->
     <div class="translucent-panel" id="backcountry-panel">
         <h1>Backcountry</h1>
         <div class="backcountry-info">
@@ -231,7 +258,6 @@
         </div>
     </div>
 
-
 </main>
 
 <script>
@@ -243,13 +269,11 @@
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('reports-container');
-                // Clear the loading message
-                container.innerHTML = '';
+                container.innerHTML = ''; // Clear "Loading reports..."
 
                 if (!data || data.length === 0) {
                     container.innerHTML = '<p>No snow reports available at this time.</p>';
                 } else {
-                    // Create an unordered list of reports.
                     const ul = document.createElement('ul');
                     data.forEach(report => {
                         const li = document.createElement('li');
@@ -273,9 +297,7 @@
             .then(data => {
                 const ratingImgEl = document.getElementById('avalanche-rating-img');
                 const backcountryContainer = document.getElementById('backcountry-container');
-
-                // Clear loading message
-                backcountryContainer.innerHTML = '';
+                backcountryContainer.innerHTML = ''; // Clear any placeholder
 
                 if (!data) {
                     backcountryContainer.innerHTML = '<p>No backcountry info available at this time.</p>';
@@ -288,7 +310,7 @@
                     ratingImgEl.style.display = 'block'; // reveal the image
                 }
 
-                // Display each paragraph as a separate <p>
+                // Display each paragraph
                 if (Array.isArray(data.paragraphs) && data.paragraphs.length > 0) {
                     data.paragraphs.forEach(paragraph => {
                         const p = document.createElement('p');
@@ -303,9 +325,46 @@
                 console.error('Error fetching backcountry info:', error);
                 document.getElementById('backcountry-container').innerHTML = '<p>Error loading backcountry info.</p>';
             });
+
+        /***********************************************
+         * Start Slideshow (Scraped Images)
+         ***********************************************/
+        async function startSlideshow() {
+            try {
+                const response = await fetch('/api/images');
+                const data = await response.json();
+                const images = data.images || [];
+
+                if (!images.length) {
+                    console.log('No images returned for slideshow.');
+                    return;
+                }
+
+                let currentIndex = 0;
+                const slideshowImage = document.getElementById('slideshow-image');
+
+                function showNextImage() {
+                    slideshowImage.src = images[currentIndex];
+                    currentIndex = (currentIndex + 1) % images.length;
+                }
+
+                // Show the first image immediately
+                showNextImage();
+
+                // Cycle through images every 3 seconds
+                setInterval(showNextImage, 3000);
+            } catch (err) {
+                console.error('Error fetching images for slideshow:', err);
+            }
+        }
+
+        // Start the slideshow after the DOM is ready
+        startSlideshow();
     });
 </script>
 
 </body>
 </html>
+
+
 
