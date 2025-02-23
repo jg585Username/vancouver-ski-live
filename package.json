@@ -1,5 +1,5 @@
 {
-  "name": "vite-starter",
+  "name": "vancouver-ski-live",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -18,21 +18,8 @@
     "@heroicons/react": "^2.1.1",
     "cheerio": "^1.0.0-rc.12",
     "node-fetch": "^3.3.2"
-  }
-}
-{
-  "name": "ski-vancouver-live-status",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "private": true,
-  "dependencies": {
-    "axios": "^1.7.9",
-    "cheerio": "^1.0.0",
     "express": "^4.21.2",
-    "node-fetch": "^3.3.2"
+    "axios": "^1.7.9"
   }
 }
+
