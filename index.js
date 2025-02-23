@@ -835,9 +835,3 @@ app.listen(PORT, () => {
     const seymourData = await scrapeSeymourLifts();
     console.log("Seymour Lifts (on startup):", seymourData);
 })();
-
-
-
-
-
- 
