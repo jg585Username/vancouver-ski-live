@@ -659,6 +659,29 @@ async function scrapesBackcountryInfo() {
     }
 }
 
+async function getHtml() {
+    const url = 'https://www.snow-forecast.com/resorts/Grouse-Mountain/6day/mid';
+    const { data: html } = await axios.get(url);
+    return html;
+}
+
+async function scrapeImagesFromSnowForecast() {
+    const html = await getHtml();
+    const $ = cheerio.load(html);
+
+    const imageUrls = [];
+    $('tr.forecast-table__row[data-row="maps"] img').each((i, el) => {
+        const src = $(el).attr('src');
+        if (src) imageUrls.push(src);
+    });
+
+    return imageUrls;
+}
+
+scrapeImagesFromSnowForecast().then(urls => {
+    console.log('Found the following images:', urls);
+});
+
 /**
  * 7) Combine routes
  */
@@ -762,6 +785,37 @@ app.get('/api/snow-reports', async (req, res) => {
 app.get('/api/backcountry-info', async (req, res) => {
    const update = await scrapesBackcountryInfo();
    res.json(update);
+});
+
+app.get('/api/images', async (req, res) => {
+    try {
+        const url = 'https://www.snow-forecast.com/resorts/Grouse-Mountain/6day/mid';
+        const response = await fetch(url);
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Collect the scraped image URLs
+        const imageUrls = [];
+        $('tr.forecast-table__row[data-row="maps"] img').each((i, el) => {
+            let src = $(el).attr('src');
+            if (src) {
+                // If the src is relative (starts with "/"), prepend the domain
+                if (src.startsWith('/')) {
+                    src = 'https://www.snow-forecast.com' + src;
+                }
+                imageUrls.push(src);
+            }
+        });
+
+        // Log them for debugging
+        console.log('Scraped image URLs:', imageUrls);
+
+        // Return them as JSON
+        res.json({ images: imageUrls });
+    } catch (err) {
+        console.error('Error scraping images:', err);
+        res.status(500).json({ error: 'Failed to scrape images' });
+    }
 });
 
 // Use appRoutes under /api
