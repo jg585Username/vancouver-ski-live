@@ -1,6 +1,6 @@
 // server.js
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import express from 'express';
 import fetch from 'node-fetch';
 import { createServer as createViteServer } from 'vite';
