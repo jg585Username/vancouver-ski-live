@@ -1,16 +1,25 @@
 {
-  "name": "ski-vancouver-live-status",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "name": "vancouver-ski-live",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.1.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1"
+  },
   "dependencies": {
-    "axios": "^1.7.9",
-    "cheerio": "^1.0.0",
-    "express": "^4.21.2",
+    "@heroicons/react": "^2.1.1",
+    "cheerio": "^1.0.0-rc.12",
     "node-fetch": "^3.3.2"
+    "express": "^4.21.2",
+    "axios": "^1.7.9"
   }
 }
+
