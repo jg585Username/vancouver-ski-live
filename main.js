@@ -1,4 +1,4 @@
-import './style.css';
+import './styles.css';
 import { fetchAllData, processResortData } from './weather.js';
 import { createResortCard } from './templates.js';
 import { createDefaultCard } from './defaultLayout.js';
