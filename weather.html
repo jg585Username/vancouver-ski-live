@@ -16,9 +16,9 @@
         }
         body {
             font-family: "Proxima Nova", sans-serif;
-            background: url("images/IMG_4922.jpeg") no-repeat center center fixed;
             background-size: cover; /* Cover entire screen */
-            background-color: #333;  /* fallback */
+            /* fallback */
+            background: #333 url("images/IMG_4922.jpeg") no-repeat fixed center center;
             color: #fff;
         }
 
@@ -188,6 +188,61 @@
                 align-items: center;
             }
         }
+
+        .corner-image {
+            position: fixed;
+            top: 20px;
+            z-index: 50;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            display: block;
+        }
+        .corner-image img {
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        .corner-image img:hover {
+            transform: scale(1.05);
+        }
+        .left-image {
+            left: 20px;
+        }
+        .left-image img {
+            width: 150px;
+            height: auto;
+        }
+        .right-image {
+            right: 20px;
+        }
+        .right-image img {
+            width: 100px;
+            height: auto;
+        }
+        .attribution {
+            position: fixed;
+            left: 20px;
+            top: 80px;
+            font-size: 10px;
+            color: #86868B;
+            font-family: system-ui, -apple-system, sans-serif;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            display: block;
+        }
+        @media screen and (max-width: 768px) {
+            .corner-image {
+                display: none !important;
+                visibility: hidden;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .attribution {
+                display: none !important;
+                visibility: hidden;
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -229,6 +284,12 @@
 
     <div class="translucent-panel">
         <h1 style="font-size: 24px;">Forecast</h1>
+        <iframe
+                src="forecastSnippet.html"
+                width="100%"
+                height="600"
+                style="border:none;">
+        </iframe>
     </div>
 
     <!-- BACKCOUNTRY -->
@@ -348,7 +409,59 @@
         startSlideshow();
     });
 </script>
+<script>
+    // On page load, fetch forecastSnippet.html
+    fetch('forecastSnippet.html')  // or a full URL if hosted elsewhere
+        .then(response => response.text())
+        .then(html => {
+            // Insert the fetched HTML into the placeholder
+            document.getElementById('forecast-container').innerHTML = html;
+        })
+        .catch(err => {
+            console.error('Error loading forecast snippet:', err);
+        });
+</script>
 
+<script>
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    function updateVisibility() {
+        const cornerImages = document.querySelectorAll('.corner-image');
+        const attribution = document.querySelector('.attribution');
+
+        const fadeStart = 50;
+        const fadeEnd = 150;
+        const scrollPos = window.scrollY;
+        let opacity = 1;
+
+        if (scrollPos > fadeStart) {
+            opacity = Math.max(0, 1 - (scrollPos - fadeStart) / (fadeEnd - fadeStart));
+        }
+
+        cornerImages.forEach(image => {
+            image.style.opacity = opacity;
+            image.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
+        });
+        attribution.style.opacity = opacity;
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        lastScrollY = window.scrollY;
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                updateVisibility();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // Call once on load
+    updateVisibility();
+</script>
 </body>
 </html>
 

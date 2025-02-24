@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❄️</text></svg>">
+    <style>
+        .corner-image {
+            position: fixed;
+            top: 20px;
+            z-index: 50;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            display: block;
+        }
+        .corner-image img {
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        .corner-image img:hover {
+            transform: scale(1.05);
+        }
+        .left-image {
+            left: 20px;
+        }
+        .left-image img {
+            width: 150px;
+            height: auto;
+        }
+        .right-image {
+            right: 20px;
+        }
+        .right-image img {
+            width: 100px;
+            height: auto;
+        }
+        .attribution {
+            position: fixed;
+            left: 20px;
+            top: 80px;
+            font-size: 10px;
+            color: #86868B;
+            font-family: system-ui, -apple-system, sans-serif;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            display: block;
+        }
+        @media screen and (max-width: 768px) {
+            .corner-image {
+                display: none !important;
+                visibility: hidden;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .attribution {
+                display: none !important;
+                visibility: hidden;
+                opacity: 0;
+                pointer-events: none;
+            }
+        }
+    </style>
+    <script type="module" crossorigin="" src="/assets/index-Bc9YowII.js"></script>
+    <link rel="stylesheet" crossorigin="" href="/assets/index-DLZIcIfO.css">
+    <link href="moz-extension://10729e6e-f492-490f-a79e-5702ea882372/css/content.css" rel="stylesheet" type="text/css"><link rel="stylesheet" href="https://fonts.cdnfonts.com/css/sf-pro-display"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Get real-time snow forecasts for your favorite British Columbia ski resorts"><title>Ski BC</title></head>
+<body class="antialiased">
+<a href="https://snow-forecast.com" target="_blank" rel="noopener noreferrer" class="corner-image left-image" style="opacity: 1; pointer-events: auto;">
+    <img src="/snow-forecast.jpg" alt="Snow Forecast">
+</a>
+<div class="attribution" style="opacity: 1;">data embed by snow-forecast.com</div>
+<a href="https://github.com/TheExploration/skibc" target="_blank" rel="noopener noreferrer" class="corner-image right-image" style="opacity: 1; pointer-events: auto;">
+    <img src="https://opengraph.githubassets.com/1/github-mark" alt="GitHub Repository">
+</a>
+<script>
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    function updateVisibility() {
+        const cornerImages = document.querySelectorAll('.corner-image');
+        const attribution = document.querySelector('.attribution');
+
+        // Calculate opacity based on scroll position
+        // Start fading at 50px and complete fade by 150px
+        const fadeStart = 50;
+        const fadeEnd = 150;
+        const scrollPos = window.scrollY;
+
+        let opacity = 1;
+        if (scrollPos > fadeStart) {
+            opacity = Math.max(0, 1 - (scrollPos - fadeStart) / (fadeEnd - fadeStart));
+        }
+
+        // Apply opacity to elements
+        cornerImages.forEach(image => {
+            image.style.opacity = opacity;
+            image.style.pointerEvents = opacity === 0 ? 'none' : 'auto';
+        });
+
+        attribution.style.opacity = opacity;
+
+        ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+        lastScrollY = window.scrollY;
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                updateVisibility();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // Initial visibility check
+    updateVisibility();
+</script>
+
+<div id="app">
+    <div class="min-h-screen p-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-2 apple-rainbow-text">Snow Forecast BC</h1>
+            <p class="text-gray-600 font-semibold">The best forecast website for BC ski/board!</p>
+            <p class="text-xs text-gray-400 font-normal">* forecast is conservative. tends to underestimate interior mountains</p>
+
+        </header>
+
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-8 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <button id="dropdown-button" class="w-full md:w-64 bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between shadow-sm hover:bg-gray-50">
+                            <span class="block truncate">Select Resorts</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div id="dropdown-menu" class="hidden absolute z-10 mt-1 w-full md:w-64 bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                            <div class="sticky top-0 bg-white p-2 border-b border-gray-200">
+                                <div class="relative">
+                                    <input type="text" id="resort-search" class="w-full px-3 py-2 border border-gray-300 rounded-md pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Search resorts...">
+                                    <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="p-2 space-y-1">
+                                <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                    <input type="checkbox" id="select-all" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span id="select-all-text" class="ml-2 text-sm font-medium">Select All</span>
+                                </label>
+                                <div class="border-t border-gray-200 my-2"></div>
+                                <div id="resort-list">
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Apex" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Apex Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Mt-Baldy-Ski-Area" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mt Baldy</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Big-White" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Big White</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Cypress-Mountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked="">
+                                        <span class="ml-2 text-sm">Cypress Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Fairmont-Hot-Springs" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Fairmont Hot Springs</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Fernie" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Fernie Alpine</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Grouse-Mountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked="">
+                                        <span class="ml-2 text-sm">Grouse Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Harper-Mountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Harper Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Ski-Smithers" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Hudson Bay Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Kicking-Horse" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Kicking Horse</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Kimberley" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Kimberley Alpine</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Manning-Park-Resort" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Manning Park</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="MountCain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mount Cain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Mount-Timothy-Ski-Area" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mount Timothy</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Mount-Washington" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mount Washington</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Mount-Seymour" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked="">
+                                        <span class="ml-2 text-sm">Mount Seymour</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Murray-Ridge" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Murray Ridge</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Panorama" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Panorama Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="PowderKing" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Powder King</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Red-Mountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Red Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Revelstoke" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Revelstoke Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="HemlockResort" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Sasquatch Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="ShamesMountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Shames Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Silver-Star" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">SilverStar Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Summit-Lake-Ski-and-Snowboard-Area" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Summit Lake Ski Area</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Sun-Peaks" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Sun Peaks</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Troll-Resort" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Troll Resort</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Whistler-Blackcomb" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Whistler Blackcomb</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Whitewater" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Whitewater</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Lake-Louise" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Lake Louise</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Sunshine" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Sunshine Village</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Banff-Norquay" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mt Norquay</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Marmot-Basin" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Marmot Basin</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Nakiska" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Nakiska</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Castle-Mountain-Resort" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Castle Mountain</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Pass-Powderkeg" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Pass Powderkeg</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Mount-Baker" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Mt Baker</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Crystal-Mountain" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Crystal Mountain WA</span>
+                                    </label>
+
+                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                        <input type="checkbox" value="Stevens-Pass" class="resort-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm">Stevens Pass</span>
+                                    </label>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button id="elevation-button" class="w-full md:w-48 bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between shadow-sm hover:bg-gray-50">
+                            <span id="elevation-text" class="block truncate capitalize">Base Forecast</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div id="elevation-menu" class="hidden absolute right-0 z-10 mt-1 w-48 bg-white rounded-lg shadow-lg">
+                            <div class="p-2 space-y-1">
+                                <button class="elevation-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="bot">Base Forecast</button>
+                                <button class="elevation-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="mid">Mid Forecast</button>
+                                <button class="elevation-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="top">Peak Forecast</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="more-info" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm font-bold text-gray-900">Full View</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button id="reverse-order" class="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 text-sm font-medium text-gray-700">
+                        ↓ Normal Order
+                    </button>
+
+                    <div class="relative">
+                        <button id="sort-button" class="w-full md:w-48 bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between shadow-sm hover:bg-gray-50">
+                            <span id="sort-text" class="block truncate capitalize">Sort by Temperature</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div id="sort-menu" class="absolute right-0 z-10 mt-1 w-48 bg-white rounded-lg shadow-lg hidden">
+                            <div class="p-2 space-y-1">
+                                <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="temperature">Sort by Temperature</button>
+                                <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="snowfall">Sort by Snowfall</button>
+                                <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-lg" data-value="wind">Sort by Wind</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button id="sort-day-button" class="w-full md:w-32 bg-white border border-gray-300 rounded-lg px-4 py-2 text-left flex items-center justify-between shadow-sm hover:bg-gray-50">
+                            <span id="sort-day-text" class="block truncate capitalize">Monday</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div id="sort-day-menu" class="hidden absolute right-0 z-10 mt-1 w-32 bg-white rounded-lg shadow-lg">
+                            <div class="p-2 space-y-1" id="sort-day-options">
+                                <!-- Day options will be populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="forecasts" class="space-y-8"><div id="forecast-Mount-Seymour">
+                <div class="resort-card rounded-2xl p-4 shadow-lg mb-6 backdrop-blur-md bg-white/80">
+                    <div class="mb-3 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-text-primary tracking-tight">Mount Seymour</h2>
+                            <p class="text-xs text-text-secondary">936m</p>
+                        </div>
+
+                        <a href="https://mtseymour.ca/the-mountain/todays-conditions-hours#block-webcams" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 bg-snow-blue rounded-lg hover:bg-blue-50 transition-colors" onclick="handleSeymourClick(event, this)">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-text-blue">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-text-blue">Webcams</span>
+                        </a>
+
+                    </div>
+                    <div class="relative">
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: -200, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path>
+                            </svg>
+                        </button>
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: 200, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path>
+                            </svg>
+                        </button>
+                        <div class="scroll-container overflow-x-auto hide-scrollbar">
+                            <div class="flex gap-3 pb-2" style="width: max-content">
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Monday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">4°C</div>
+
+                                            <div class="text-sm font-bold apple-rainbow-text">
+                                                10 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / light snow">light rain / light snow</div>
+                                        <div class="text-xs font-medium text-text-blue mt-1">
+                                            20 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Tuesday</h3>
+                                        <span class="text-lg">❄️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">2°C</div>
+
+                                            <div class="text-sm font-bold text-text-blue">
+                                                3 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light snow">light snow</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1250 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Wednesday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">7°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            10 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Thursday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">5°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / cloudy">light rain / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2500 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Friday</h3>
+                                        <span class="text-lg">☀️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">8°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="clear / some clouds">clear / some clouds</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Saturday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">9°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Sunday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">6°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="cloudy">cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1950 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><div id="forecast-Cypress-Mountain">
+                <div class="resort-card rounded-2xl p-4 shadow-lg mb-6 backdrop-blur-md bg-white/80">
+                    <div class="mb-3 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-text-primary tracking-tight">Cypress Mountain</h2>
+                            <p class="text-xs text-text-secondary">826m</p>
+                        </div>
+
+                        <a href="https://www.cypressmountain.com/mountain-report#downhill-webcams" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 bg-snow-blue rounded-lg hover:bg-blue-50 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-text-blue">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-text-blue">Webcams</span>
+                        </a>
+
+                    </div>
+                    <div class="relative">
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: -200, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path>
+                            </svg>
+                        </button>
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: 200, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path>
+                            </svg>
+                        </button>
+                        <div class="scroll-container overflow-x-auto hide-scrollbar">
+                            <div class="flex gap-3 pb-2" style="width: max-content">
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Monday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">5°C</div>
+
+                                            <div class="text-sm font-bold text-text-blue">
+                                                6 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain">light rain</div>
+                                        <div class="text-xs font-medium text-text-blue mt-1">
+                                            20 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Tuesday</h3>
+                                        <span class="text-lg">❄️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">3°C</div>
+
+                                            <div class="text-sm font-bold text-text-blue">
+                                                3 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light snow">light snow</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1300 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Wednesday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">7°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Thursday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">6°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / some clouds">light rain / some clouds</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2500 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Friday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">8°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds">some clouds</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Saturday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">9°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Sunday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">6°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / cloudy">light rain / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1900 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><div id="forecast-Grouse-Mountain">
+                <div class="resort-card rounded-2xl p-4 shadow-lg mb-6 backdrop-blur-md bg-white/80">
+                    <div class="mb-3 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold text-text-primary tracking-tight">Grouse Mountain</h2>
+                            <p class="text-xs text-text-secondary">881m</p>
+                        </div>
+
+                        <a href="https://www.grousemountain.com/web-cams/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 bg-snow-blue rounded-lg hover:bg-blue-50 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-text-blue">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-text-blue">Webcams</span>
+                        </a>
+
+                    </div>
+                    <div class="relative">
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: -200, behavior: 'smooth'})" class="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path>
+                            </svg>
+                        </button>
+                        <button onclick="this.parentElement.querySelector('.scroll-container').scrollBy({left: 200, behavior: 'smooth'})" class="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 bg-white/80 rounded-full p-2 shadow-lg hover:bg-white/90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path>
+                            </svg>
+                        </button>
+                        <div class="scroll-container overflow-x-auto hide-scrollbar">
+                            <div class="flex gap-3 pb-2" style="width: max-content">
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Monday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">5°C</div>
+
+                                            <div class="text-sm font-bold text-text-blue">
+                                                8 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / light snow">light rain / light snow</div>
+                                        <div class="text-xs font-medium text-text-blue mt-1">
+                                            20 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Tuesday</h3>
+                                        <span class="text-lg">❄️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">2°C</div>
+
+                                            <div class="text-sm font-bold text-text-blue">
+                                                3 cm snow
+                                            </div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light snow">light snow</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1250 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Wednesday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">7°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Thursday</h3>
+                                        <span class="text-lg">🌧️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-green-600 font-semibold">5°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="light rain / cloudy">light rain / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2500 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Friday</h3>
+                                        <span class="text-lg">☀️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">8°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="clear / some clouds">clear / some clouds</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2800 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Saturday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">9°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="some clouds / cloudy">some clouds / cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 2600 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-[180px]">
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <h3 class="text-sm font-semibold text-text-primary tracking-tight">Sunday</h3>
+                                        <span class="text-lg">☁️</span>
+                                    </div>
+                                    <div class="bg-snow-blue rounded-xl p-3 backdrop-blur-sm">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-2xl font-bold text-orange-500 font-semibold">6°C</div>
+
+                                        </div>
+                                        <div class="text-sm text-text-primary mt-1 font-medium truncate" title="cloudy">cloudy</div>
+                                        <div class="text-xs font-medium text-text-secondary mt-1">
+                                            5 km/h wind
+                                        </div>
+                                        <div class="mt-2 pt-2 border-t border-black/5">
+                                            <div class="text-xs text-text-primary font-medium">
+                                                Freezing: 1900 m
+                                            </div>
+                                            <div class="text-xs font-medium mt-0.5 truncate text-text-blue" title="Wet, Slushy Snow">
+                                                Wet, Slushy Snow
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</div></body><div></div>

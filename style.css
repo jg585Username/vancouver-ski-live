@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'SF Pro Display', system-ui, sans-serif;
+        font-weight: 600;
+    }
+}
+
+body {
+    background: #ffffff;
+    min-height: 100vh;
+    position: relative;
+    font-family: 'SF Pro Display', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+}
+.apple-rainbow-text {
+    background: linear-gradient(209deg, #ea6044 39%, #dc5083 50%, #9a6df7 67%, #3f8def 81%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.rainbow-text {
+    background: linear-gradient(
+            90deg,
+            #FF375F,
+            #FF453A,
+            #FF9F0A,
+            #FFD60A,
+            #30D158,
+            #66D4CF,
+            #40C8E0,
+            #0A84FF,
+            #5E5CE6,
+            #BF5AF2,
+            #FF375F
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% auto;
+    animation: rainbow 8s linear infinite;
+}
+
+@keyframes rainbow {
+    to {
+        background-position: 200% center;
+    }
+}
+
+.resort-card {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.period-card {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.period-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.weather-icon {
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.float-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+.weather-emoji {
+    animation: float 3s ease-in-out infinite;
+    display: inline-block;
+    margin-left: 0.5rem;
+    font-size: 1.25rem;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
