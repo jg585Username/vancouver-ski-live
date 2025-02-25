@@ -21,7 +21,6 @@
             background-color: #333;
             color: #fff;
         }
-
         /* ================ NAV BAR  ================ */
         header {
             background-color: #2c3e50;
@@ -70,7 +69,6 @@
         nav a:hover::after {
             width: 100%;
         }
-
         /* ================ MAIN CONTENT  ================ */
         main {
             margin-top: 80px;
@@ -117,7 +115,6 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
-
         /* Backcountry Panel */
         .backcountry-info {
             display: flex;
@@ -136,7 +133,6 @@
             border: 3px solid #fff;
             border-radius: 8px;
         }
-
         /* ================= Forecast Section Styling ================= */
         .resort-forecast-section {
             margin-bottom: 2rem;
@@ -169,7 +165,6 @@
             margin: 0.3rem 0;
             font-size: 0.9rem;
         }
-
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
@@ -326,11 +321,22 @@
             .then(data => {
                 const forecastSections = document.getElementById('forecast-sections');
                 forecastSections.innerHTML = '';
-                const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
+                // Static days array.
                 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                // Compute current PST weekday.
+                const now = new Date();
+                const currentDay = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
+                const currentIndex = days.indexOf(currentDay);
+                // Rotate the days array so current PST day is first.
+                const orderedDays = days.slice(currentIndex).concat(days.slice(0, currentIndex));
+
+                // Define the resort order.
+                const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
                     if (!resortData) return;
+                    // Reorder the forecast data array similarly.
+                    const reorderedForecast = resortData.forecast.slice(currentIndex).concat(resortData.forecast.slice(0, currentIndex));
                     const resortSection = document.createElement('div');
                     resortSection.className = 'resort-forecast-section';
                     const header = document.createElement('h2');
@@ -340,23 +346,23 @@
                     const forecastRow = document.createElement('div');
                     forecastRow.className = 'forecast-row';
 
-                    resortData.forecast.forEach((dayData, index) => {
+                    reorderedForecast.forEach((dayData, idx) => {
                         const panel = document.createElement('div');
                         panel.className = 'forecast-panel';
 
                         const dayHeader = document.createElement('h3');
-                        dayHeader.textContent = days[index];
+                        dayHeader.textContent = orderedDays[idx];
                         panel.appendChild(dayHeader);
 
-                        // Dropdown for selecting level
+                        // Dropdown for selecting forecast level.
                         const select = document.createElement('select');
                         select.className = 'level-select';
                         select.innerHTML = `<option value="base">Base</option>
-                              <option value="mid">Mid</option>
-                              <option value="top">Top</option>`;
+                                        <option value="mid">Mid</option>
+                                        <option value="top">Top</option>`;
                         panel.appendChild(select);
 
-                        // Container for forecast details
+                        // Container for forecast details.
                         const detailsDiv = document.createElement('div');
                         detailsDiv.className = 'forecast-details';
                         panel.appendChild(detailsDiv);
@@ -389,6 +395,7 @@
 
 </body>
 </html>
+
 
 
 

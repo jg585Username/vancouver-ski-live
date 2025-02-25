@@ -442,6 +442,9 @@ scrapeImagesFromSnowForecast().then(urls => console.log('Found images:', urls));
 /***********************************************
  * New Forecast Endpoint (/api/forecast)
  ***********************************************/
+/***********************************************
+ * New Forecast Endpoint (/api/forecast)
+ ***********************************************/
 app.get('/api/forecast', async (req, res) => {
   try {
     // Fetch the three forecast datasets concurrently.
@@ -460,10 +463,16 @@ app.get('/api/forecast', async (req, res) => {
     const resortIndices = {
       "Cypress-Mountain": 3,
       "Grouse-Mountain": 6,
-      "Mount-Seymour": 15  // Verify this index exists in your data!
+      "Mount-Seymour": 15  // Verify that this index exists in your data!
     };
 
     const forecastResult = {};
+
+    // Compute current PST day index.
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const now = new Date();
+    const currentDay = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
+    const currentIndex = days.indexOf(currentDay);
 
     // For each desired resort, build a 7-day forecast.
     for (const resortName in resortIndices) {
@@ -473,8 +482,8 @@ app.get('/api/forecast', async (req, res) => {
       const topResort = topData.resorts[index];
       if (!botResort || !midResort || !topResort) continue;
 
-      // IMPORTANT: Our forecast arrays are nested inside the "data" property.
-      // We filter keys that hold arrays (i.e. forecast block arrays).
+      // Forecast arrays are nested inside the "data" property.
+      // We only process keys whose values are arrays.
       const keys = Object.keys(botResort.data).filter(k => Array.isArray(botResort.data[k]));
 
       const daysForecast = [];
@@ -487,7 +496,11 @@ app.get('/api/forecast', async (req, res) => {
         });
         daysForecast.push(dayData);
       }
-      forecastResult[resortName] = { forecast: daysForecast };
+
+      // Reorder the daysForecast so that the current PST day is first.
+      const reorderedForecast = daysForecast.slice(currentIndex).concat(daysForecast.slice(0, currentIndex));
+
+      forecastResult[resortName] = { forecast: reorderedForecast };
     }
 
     res.json({ forecast: forecastResult });
