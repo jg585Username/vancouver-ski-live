@@ -141,11 +141,13 @@
             text-align: center;
             margin-bottom: 1rem;
         }
+        /* Forecast row now scrollable horizontally */
         .forecast-row {
             display: flex;
+            overflow-x: auto;
             gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-wrap: nowrap;
+            padding-bottom: 1rem;
         }
         .forecast-panel {
             background-color: rgba(255,255,255,0.1);
@@ -153,7 +155,8 @@
             border-radius: 8px;
             padding: 1rem;
             text-align: center;
-            flex: 1 1 200px;
+            flex: 0 0 auto;
+            min-width: 200px;
         }
         .forecast-panel h3 {
             margin-bottom: 0.5rem;
@@ -335,7 +338,7 @@
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
                     if (!resortData) return;
-                    // Reorder the forecast data array similarly.
+                    // Rotate the forecast data array.
                     const reorderedForecast = resortData.forecast.slice(currentIndex).concat(resortData.forecast.slice(0, currentIndex));
                     const resortSection = document.createElement('div');
                     resortSection.className = 'resort-forecast-section';
@@ -395,6 +398,7 @@
 
 </body>
 </html>
+
 
 
 
