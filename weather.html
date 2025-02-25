@@ -138,25 +138,22 @@
             margin-top: 1rem;
         }
 
-        /* You can further separate the rating & paragraphs */
+        /* Rating Section */
         .rating-section {
-            text-align: center;     /* Center the rating image, heading, etc. */
+            text-align: center;
         }
-
         .rating-section h2 {
             margin-bottom: 0.5rem;
         }
-
         .rating-section img {
-            /* Let’s give the image a better presence */
             max-width: 120px;
             margin: 0.5rem auto 0 auto;
-            display: none;          /* Hide by default; we’ll show it in JS if a URL is found */
+            display: none;
             border: 3px solid #fff;
             border-radius: 8px;
         }
 
-        /* Paragraphs container styling */
+        /* Paragraphs container */
         .paragraphs-section {
             background-color: rgba(255, 255, 255, 0.15);
             padding: 1rem;
@@ -167,7 +164,7 @@
             margin-bottom: 1rem;
         }
 
-        /* Slideshow container styling if needed */
+        /* Slideshow container */
         #slideshow-image {
             max-width: 100%;
             max-height: 300px;
@@ -181,12 +178,43 @@
                 padding: 1rem;
                 margin: 1rem;
             }
-
-            /* Stack paragraph & slideshow vertically on small screens */
             .reports-slideshow-container {
                 flex-direction: column;
                 align-items: center;
             }
+        }
+
+        /* ================= Forecast Section Styling ================= */
+        .resort-forecast-section {
+            margin-bottom: 2rem;
+        }
+        .resort-forecast-section h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .forecast-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .forecast-panel {
+            background-color: rgba(255,255,255,0.1);
+            border: 1px solid #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            flex: 1 1 200px;
+        }
+        .forecast-panel h3 {
+            margin-bottom: 0.5rem;
+        }
+        .level-select {
+            margin-bottom: 0.5rem;
+        }
+        .forecast-details p {
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -210,28 +238,25 @@
     <!-- SNOW REPORTS PANEL -->
     <div class="translucent-panel" id="snow-reports-panel">
         <h1 style="font-size: 27px;">❅ Latest snow reports</h1>
-
-        <!--
-          Flex container for the text (left) & slideshow (right)
-        -->
         <div class="reports-slideshow-container" style="display: flex; gap: 1rem;">
-            <!-- Text container (left side) -->
             <div class="paragraphs-section" id="reports-container" style="flex: 1;">
                 <p>Loading reports...</p>
             </div>
-
-            <!-- Slideshow container (right side) -->
             <div style="flex: 1; display: flex; justify-content: center; align-items: center;">
                 <img id="slideshow-image" alt="Slideshow" />
             </div>
         </div>
     </div>
 
-    <div class="translucent-panel">
-        <h1 style="font-size: 24px;">Forecast</h1>
+    <!-- WEEKLY FORECAST PANEL -->
+    <div class="translucent-panel" id="forecast-panel">
+        <h1 style="font-size: 24px;">Weekly Forecast</h1>
+        <div id="forecast-sections">
+            <p>Loading forecast...</p>
+        </div>
     </div>
 
-    <!-- BACKCOUNTRY -->
+    <!-- BACKCOUNTRY PANEL -->
     <div class="translucent-panel" id="backcountry-panel">
         <h1>Backcountry</h1>
         <div class="backcountry-info">
@@ -255,15 +280,13 @@
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('reports-container');
-                container.innerHTML = ''; // Clear "Loading reports..."
-
+                container.innerHTML = '';
                 if (!data || data.length === 0) {
                     container.innerHTML = '<p>No snow reports available at this time.</p>';
                 } else {
                     const ul = document.createElement('ul');
                     data.forEach(report => {
                         const li = document.createElement('li');
-                        // Customize how you want to display reportText and publishedText.
                         li.innerHTML = `<strong>${report.reportText}</strong> <em>(${report.publishedText})</em><br><br/>`;
                         ul.appendChild(li);
                     });
@@ -283,20 +306,15 @@
             .then(data => {
                 const ratingImgEl = document.getElementById('avalanche-rating-img');
                 const backcountryContainer = document.getElementById('backcountry-container');
-                backcountryContainer.innerHTML = ''; // Clear any placeholder
-
+                backcountryContainer.innerHTML = '';
                 if (!data) {
                     backcountryContainer.innerHTML = '<p>No backcountry info available at this time.</p>';
                     return;
                 }
-
-                // Show the avalanche rating image if we have a URL
                 if (data.ratingImg) {
                     ratingImgEl.src = data.ratingImg;
-                    ratingImgEl.style.display = 'block'; // reveal the image
+                    ratingImgEl.style.display = 'block';
                 }
-
-                // Display each paragraph
                 if (Array.isArray(data.paragraphs) && data.paragraphs.length > 0) {
                     data.paragraphs.forEach(paragraph => {
                         const p = document.createElement('p');
@@ -320,36 +338,114 @@
                 const response = await fetch('/api/images');
                 const data = await response.json();
                 const images = data.images || [];
-
                 if (!images.length) {
                     console.log('No images returned for slideshow.');
                     return;
                 }
-
                 let currentIndex = 0;
                 const slideshowImage = document.getElementById('slideshow-image');
-
                 function showNextImage() {
                     slideshowImage.src = images[currentIndex];
                     currentIndex = (currentIndex + 1) % images.length;
                 }
-
-                // Show the first image immediately
                 showNextImage();
-
                 setInterval(showNextImage, 1500);
             } catch (err) {
                 console.error('Error fetching images for slideshow:', err);
             }
         }
-
-        // Start the slideshow after the DOM is ready
         startSlideshow();
+
+        /***********************************************
+         * Fetch & Display Weekly Forecast for Resorts
+         ***********************************************/
+        const forecastSectionsContainer = document.getElementById('forecast-sections');
+        forecastSectionsContainer.innerHTML = ''; // Clear loading text
+
+        // Fetch base, mid, and top data concurrently
+        Promise.all([
+            fetch('https://snow-scraper.azurewebsites.net/bot').then(res => res.json()),
+            fetch('https://snow-scraper.azurewebsites.net/mid').then(res => res.json()),
+            fetch('https://snow-scraper.azurewebsites.net/top').then(res => res.json())
+        ]).then(([botData, midData, topData]) => {
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            // Define resort indices per your instructions
+            const resortIndices = {
+                "Cypress-Mountain": 3,
+                "Grouse-Mountain": 6,
+                "Mount-Seymour": 15
+            };
+            // Order: Cypress first, then Grouse, then Mount Seymour
+            const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
+
+            resortOrder.forEach(resortName => {
+                const index = resortIndices[resortName];
+                const resortSection = document.createElement('div');
+                resortSection.classList.add('resort-forecast-section');
+                resortSection.innerHTML = `<h2>${resortName} Forecast</h2>`;
+
+                const forecastRow = document.createElement('div');
+                forecastRow.classList.add('forecast-row');
+
+                for (let day = 0; day < 7; day++) {
+                    const panel = document.createElement('div');
+                    panel.classList.add('forecast-panel');
+
+                    // Day header
+                    const dayHeader = document.createElement('h3');
+                    dayHeader.textContent = days[day];
+                    panel.appendChild(dayHeader);
+
+                    // Dropdown to choose level
+                    const select = document.createElement('select');
+                    select.classList.add('level-select');
+                    select.innerHTML = `<option value="base">Base</option>
+                                    <option value="mid">Mid</option>
+                                    <option value="top">Top</option>`;
+                    panel.appendChild(select);
+
+                    // Container for forecast details
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.classList.add('forecast-details');
+                    panel.appendChild(detailsDiv);
+
+                    // Update function – iterates over keys (except "resortName" if present) and shows the value for the selected level and day.
+                    function updateDetails() {
+                        const level = select.value; // "base", "mid", or "top"
+                        let detailsHTML = '';
+                        const keys = Object.keys(botData.resorts[index]).filter(k => k !== 'resortName');
+                        keys.forEach(key => {
+                            let value;
+                            if (level === 'base') {
+                                value = botData.resorts[index][key][day];
+                            } else if (level === 'mid') {
+                                value = midData.resorts[index][key][day];
+                            } else if (level === 'top') {
+                                value = topData.resorts[index][key][day];
+                            }
+                            detailsHTML += `<p><strong>${key}:</strong> ${value}</p>`;
+                        });
+                        detailsDiv.innerHTML = detailsHTML;
+                    }
+
+                    // Initialize with default level (base)
+                    updateDetails();
+                    select.addEventListener('change', updateDetails);
+                    forecastRow.appendChild(panel);
+                }
+                resortSection.appendChild(forecastRow);
+                forecastSectionsContainer.appendChild(resortSection);
+            });
+        }).catch(error => {
+            console.error('Error fetching forecast data:', error);
+            forecastSectionsContainer.innerHTML = '<p>Error loading forecast data.</p>';
+        });
     });
 </script>
 
 </body>
 </html>
+
 
 
 
