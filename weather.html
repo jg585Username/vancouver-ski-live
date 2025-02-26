@@ -4,9 +4,8 @@
     <meta charset="utf-8" />
     <title>Webcams - Ski Vancouver Status</title>
     <link rel="icon" href="images/ai_generated_logo.png" type="image/png">
-    <!-- Include Chart.js from a CDN -->
+    <!-- Include Chart.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         /* General Reset */
         * {
@@ -24,6 +23,7 @@
             background-color: #333;
             color: #fff;
         }
+
         /* ================ NAV BAR  ================ */
         header {
             background-color: #2c3e50;
@@ -72,6 +72,7 @@
         nav a:hover::after {
             width: 100%;
         }
+
         /* ================ MAIN CONTENT  ================ */
         main {
             margin-top: 80px;
@@ -100,6 +101,7 @@
             color: #ccc;
             margin: 0.5rem 0 1.5rem;
         }
+
         /* Slideshow & Reports */
         .reports-slideshow-container {
             display: flex;
@@ -118,7 +120,6 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
-        /* Legend image with caption */
         .legend-figure {
             margin-top: 10px;
             text-align: center;
@@ -133,6 +134,7 @@
             border-radius: 4px;
             border: 2px solid #ccc;
         }
+
         /* Backcountry Panel */
         .backcountry-info {
             display: flex;
@@ -151,7 +153,8 @@
             border: 3px solid #fff;
             border-radius: 8px;
         }
-        /* ================= Forecast Section Styling ================= */
+
+        /* Forecast Panels */
         .resort-forecast-section {
             margin-bottom: 2rem;
         }
@@ -159,7 +162,6 @@
             text-align: center;
             margin-bottom: 1rem;
         }
-        /* Make the forecast row a little cleaner */
         .forecast-row {
             display: flex;
             gap: 1rem;
@@ -169,7 +171,6 @@
             scrollbar-width: thin;
             scrollbar-color: #555 #222;
         }
-        /* Each forecast panel */
         .forecast-panel {
             background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid #fff;
@@ -214,19 +215,29 @@
             line-height: 1.4;
             text-align: left;
         }
-        /* ================ Chart Container ================ */
+
+        /* Chart Panel */
         #chart-panel {
             width: 90%;
             max-width: 900px;
             margin-bottom: 2rem;
+            text-align: center;
+        }
+        #chart-panel canvas {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        #resort-dropdown {
+            color: #000;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
         }
 
-        #forecastChart {
-            background-color: #d3dbe6;  /* white background behind the chart */
-            border-radius: 8px;      /* rounded corners */
-            padding: 1rem;           /* internal padding so the chart doesn’t stick to the edges */
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); /* optional box-shadow for contrast */
-        }
         @media (max-width: 600px) {
             .translucent-panel {
                 padding: 1rem;
@@ -283,6 +294,12 @@
     <!-- CHART PANEL -->
     <div class="translucent-panel" id="chart-panel">
         <h2 style="text-align:center;">Graphical Forecast</h2>
+        <!-- Dropdown to pick resort -->
+        <select id="resort-dropdown">
+            <option value="Cypress-Mountain">Cypress</option>
+            <option value="Grouse-Mountain">Grouse</option>
+            <option value="Mount-Seymour">Seymour</option>
+        </select>
         <canvas id="forecastChart" width="800" height="400"></canvas>
     </div>
 
@@ -300,7 +317,9 @@
 </main>
 
 <script>
-    // ====================== formatAttribute Function ======================
+    /***********************************************
+     * formatAttribute
+     ***********************************************/
     function formatAttribute(key, value) {
         let label = key.replace(/Blocks$/i, '');
         if (label.toLowerCase() === 'freezinglevel') {
@@ -318,6 +337,7 @@
             "Freezing Level": " m"
         };
         const unit = unitMap[label] || "";
+
         function parseAndAppendUnit(val) {
             if (val === "-" || val == null || val === "") {
                 return val;
@@ -328,17 +348,17 @@
             }
             return val;
         }
+
         if (Array.isArray(value)) {
             let output = `<strong>${label}:</strong><br>`;
-            const length = value.length;
-            if (length === 3) {
+            if (value.length === 3) {
                 output += `Morning: ${parseAndAppendUnit(value[0])}<br>`;
                 output += `Afternoon: ${parseAndAppendUnit(value[1])}<br>`;
                 output += `Night: ${parseAndAppendUnit(value[2])}`;
-            } else if (length === 2) {
+            } else if (value.length === 2) {
                 output += `Afternoon: ${parseAndAppendUnit(value[0])}<br>`;
                 output += `Night: ${parseAndAppendUnit(value[1])}`;
-            } else if (length === 1) {
+            } else if (value.length === 1) {
                 output += `Night: ${parseAndAppendUnit(value[0])}`;
             } else {
                 output += value.map(parseAndAppendUnit).join(', ');
@@ -369,21 +389,31 @@
     }
 
     /***********************************************
-     * Chart.js Global (We will fill data after fetch)
+     * Chart.js
      ***********************************************/
-    let forecastChart; // We'll store our chart instance here.
+    let forecastChart;
+    // We'll store dayLabels once (same for all resorts), and numeric arrays per resort
+    const resortChartData = {
+        "Cypress-Mountain": {dayLabels: [], snowData: [], rainData: [], freezeData: []},
+        "Grouse-Mountain": {dayLabels: [], snowData: [], rainData: [], freezeData: []},
+        "Mount-Seymour": {dayLabels: [], snowData: [], rainData: [], freezeData: []}
+    };
 
-    // This function will build or update the chart.
+    function renderChartForResort(resortName) {
+        // If the user picks a resort, we retrieve arrays from resortChartData
+        const {dayLabels, snowData, rainData, freezeData} = resortChartData[resortName];
+        renderChart(dayLabels, snowData, rainData, freezeData);
+    }
+
     function renderChart(labels, snowData, rainData, freezeData) {
         const ctx = document.getElementById('forecastChart').getContext('2d');
-        // If chart already exists, destroy it first (in case we re-render).
         if (forecastChart) {
             forecastChart.destroy();
         }
         forecastChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: labels, // e.g. ["Today","Tomorrow","Wed","Thu","Fri","Sat","Sun"]
                 datasets: [
                     {
                         label: 'Snow (cm)',
@@ -452,12 +482,10 @@
         });
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        /***********************************************
-         * Fetch & Display Snow Reports
-         ***********************************************/
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1) Snow Reports
         fetch('/api/snow-reports')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 const container = document.getElementById('reports-container');
                 container.innerHTML = '';
@@ -473,16 +501,14 @@
                     container.appendChild(ul);
                 }
             })
-            .catch(error => {
-                console.error('Error fetching snow reports:', error);
+            .catch(err => {
+                console.error('Error fetching snow reports:', err);
                 document.getElementById('reports-container').innerHTML = '<p>Error loading reports.</p>';
             });
 
-        /***********************************************
-         * Fetch & Display Backcountry (Avalanche) Info
-         ***********************************************/
+        // 2) Backcountry Info
         fetch('/api/backcountry-info')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 const ratingImgEl = document.getElementById('avalanche-rating-img');
                 const backcountryContainer = document.getElementById('backcountry-container');
@@ -505,14 +531,12 @@
                     backcountryContainer.innerHTML = '<p>No additional backcountry info found.</p>';
                 }
             })
-            .catch(error => {
-                console.error('Error fetching backcountry info:', error);
+            .catch(err => {
+                console.error('Error fetching backcountry info:', err);
                 document.getElementById('backcountry-container').innerHTML = '<p>Error loading backcountry info.</p>';
             });
 
-        /***********************************************
-         * Start Slideshow (Scraped Images)
-         ***********************************************/
+        // 3) Slideshow
         async function startSlideshow() {
             try {
                 const response = await fetch('/api/images');
@@ -524,39 +548,31 @@
                 }
                 let currentIndex = 0;
                 const slideshowImage = document.getElementById('slideshow-image');
+
                 function showNextImage() {
                     slideshowImage.src = images[currentIndex];
                     currentIndex = (currentIndex + 1) % images.length;
                 }
+
                 showNextImage();
                 setInterval(showNextImage, 1500);
             } catch (err) {
                 console.error('Error fetching images for slideshow:', err);
             }
         }
+
         startSlideshow();
 
-        /***********************************************
-         * Fetch & Display Forecast Data (and Build Chart)
-         ***********************************************/
+        // 4) Forecast Panels + All-Resort Chart Data
         fetch('/api/forecast')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 const forecastSections = document.getElementById('forecast-sections');
                 forecastSections.innerHTML = '';
 
-                // For the chart:
-                const dayLabels = [];
-                const snowData = [];
-                const rainData = [];
-                const freezeData = [];
-
-                // static weekdays
-                const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                // We'll create day labels for the next 7 days (common to all resorts)
                 const now = new Date();
-                const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-
-                // Build day labels for next 7 days
+                const pstNow = new Date(now.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
                 const dynamicDayLabels = [];
                 for (let i = 0; i < 7; i++) {
                     const d = new Date(pstNow);
@@ -566,15 +582,23 @@
                     } else if (i === 1) {
                         dynamicDayLabels.push("Tomorrow");
                     } else {
-                        dynamicDayLabels.push(d.toLocaleDateString('en-US', { weekday: 'long' }));
+                        dynamicDayLabels.push(d.toLocaleDateString('en-US', {weekday: 'long'}));
                     }
                 }
 
-                // We'll build forecast panels for Cypress, Grouse, Seymour
+                // We'll handle 3 resorts
                 const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
                     if (!resortData) return;
+
+                    // Prepare arrays for the chart
+                    resortChartData[resortName].dayLabels = [];
+                    resortChartData[resortName].snowData = [];
+                    resortChartData[resortName].rainData = [];
+                    resortChartData[resortName].freezeData = [];
+
+                    // Create a section for the forecast panels
                     const resortSection = document.createElement('div');
                     resortSection.className = 'resort-forecast-section';
                     const header = document.createElement('h2');
@@ -584,30 +608,31 @@
                     const forecastRow = document.createElement('div');
                     forecastRow.className = 'forecast-row';
 
-                    // We assume 7-day forecast => resortData.forecast is array of length 7
+                    // Each day => build a panel
                     resortData.forecast.forEach((dayData, idx) => {
                         const panel = document.createElement('div');
                         panel.className = 'forecast-panel';
 
-                        // Label for the day
+                        // day label
                         const dayHeader = document.createElement('h3');
                         dayHeader.textContent = dynamicDayLabels[idx] || "";
                         panel.appendChild(dayHeader);
 
-                        // Dropdown (base, mid, top)
+                        // base/mid/top select
                         const select = document.createElement('select');
                         select.className = 'level-select';
-                        select.innerHTML = `<option value="base">Base</option>
-                                            <option value="mid">Mid</option>
-                                            <option value="top">Top</option>`;
+                        select.innerHTML = `
+              <option value="base">Base</option>
+              <option value="mid">Mid</option>
+              <option value="top">Top</option>
+            `;
                         panel.appendChild(select);
 
-                        // Forecast details
+                        // detail area
                         const detailsDiv = document.createElement('div');
                         detailsDiv.className = 'forecast-details';
                         panel.appendChild(detailsDiv);
 
-                        // Function to re-render panel details
                         function updateDetails() {
                             const level = select.value;
                             detailsDiv.innerHTML = '';
@@ -618,36 +643,37 @@
                                 detailsDiv.appendChild(p);
                             }
                         }
+
                         select.addEventListener('change', updateDetails);
                         updateDetails();
 
                         forecastRow.appendChild(panel);
 
-                        // ========== For Chart: We'll just gather "base" data as an example ==========
-                        if (resortName === "Cypress-Mountain") {
-                            // Suppose base-level has "snow", "rain", "freezinglevel" keys
-                            // We'll grab them from dayData.base
-                            const baseKeys = dayData.base;
-                            // For day i, let's push to arrays
-                            if (idx === 0) {
-                                // If dayLabels array isn't built up enough, push day label
-                                dayLabels.push(dynamicDayLabels[idx]);
-                            }
-                            // numeric parse or default 0
-                            const snowVal = parseFloat(baseKeys?.snow ?? 0) || 0;
-                            const rainVal = parseFloat(baseKeys?.rain ?? 0) || 0;
-                            const freezeVal = parseFloat(baseKeys?.freezinglevel ?? 0) || 0;
-                            snowData.push(snowVal);
-                            rainData.push(rainVal);
-                            freezeData.push(freezeVal);
-                        }
+                        // ============ Fill Chart Data for This Resort's base-level =============
+                        resortChartData[resortName].dayLabels.push(dynamicDayLabels[idx]);
+
+                        const baseObj = dayData.base;
+                        const snowVal = parseFloat(baseObj?.snow ?? 0) || 0;
+                        const rainVal = parseFloat(baseObj?.rain ?? 0) || 0;
+                        const freezeVal = parseFloat(baseObj?.freezinglevel ?? 0) || 0;
+                        resortChartData[resortName].snowData.push(snowVal);
+                        resortChartData[resortName].rainData.push(rainVal);
+                        resortChartData[resortName].freezeData.push(freezeVal);
                     });
+
                     resortSection.appendChild(forecastRow);
                     forecastSections.appendChild(resortSection);
                 });
 
-                // ============== Finally, render chart with base-level data (Cypress) ==============
-                renderChart(dayLabels, snowData, rainData, freezeData);
+                // Default chart => show Cypress
+                renderChartForResort("Cypress-Mountain");
+
+                // Add event listener for #resort-dropdown
+                const dropdown = document.getElementById('resort-dropdown');
+                dropdown.addEventListener('change', () => {
+                    const chosenResort = dropdown.value;
+                    renderChartForResort(chosenResort);
+                });
             })
             .catch(err => {
                 console.error("Error fetching forecast data:", err);
@@ -656,8 +682,10 @@
     });
 </script>
 
+
 </body>
 </html>
+
 
 
 
