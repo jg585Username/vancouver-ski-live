@@ -156,31 +156,70 @@
             text-align: center;
             margin-bottom: 1rem;
         }
+        /* Make the forecast row a little cleaner */
         .forecast-row {
             display: flex;
-            overflow-x: auto;
             gap: 1rem;
             flex-wrap: nowrap;
+            overflow-x: auto;
             padding-bottom: 1rem;
+            /* optional: add a subtle scrollbar style if you like */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #555 #222; /* Firefox */
         }
+
+        /* Each forecast panel */
         .forecast-panel {
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid #fff;
-            border-radius: 8px;
-            padding: 1rem;
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
             text-align: center;
-            flex: 0 0 auto;
+            flex: 0 0 auto; /* so they remain side by side, scrollable */
             min-width: 200px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
+
+        /* Hover effect on the panel: slight lift and glow */
+        .forecast-panel:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Day header styling inside each forecast panel */
         .forecast-panel h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
             margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
         }
+
+        /* The dropdown for base/mid/top */
         .level-select {
             margin-bottom: 0.5rem;
-        }
-        .forecast-details p {
-            margin: 0.3rem 0;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid #fff;
+            border-radius: 6px;
+            padding: 0.3rem 0.5rem;
             font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .level-select:hover {
+            border-color: #ddd;
+        }
+        .level-select option {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Forecast details paragraphs */
+        .forecast-details p {
+            margin: 0.4rem 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            text-align: left;
         }
         @media (max-width: 600px) {
             .translucent-panel {
@@ -257,7 +296,9 @@
         // 2. Convert "freezinglevel" => "Freezing Level", else capitalize first letter
         if (label.toLowerCase() === 'freezinglevel') {
             label = 'Freezing Level';
-        } else {
+        } else if (label.toLowerCase() === 'phrases') {
+            label = 'Weather';
+        }else {
             label = label.charAt(0).toUpperCase() + label.slice(1);
         }
 
