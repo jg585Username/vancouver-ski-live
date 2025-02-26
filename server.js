@@ -468,12 +468,6 @@ app.get('/api/forecast', async (req, res) => {
 
     const forecastResult = {};
 
-    // Compute current PST day index.
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const now = new Date();
-    const currentDay = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
-    const currentIndex = days.indexOf(currentDay);
-
     // For each desired resort, build a 7-day forecast.
     for (const resortName in resortIndices) {
       const index = resortIndices[resortName];
@@ -483,7 +477,7 @@ app.get('/api/forecast', async (req, res) => {
       if (!botResort || !midResort || !topResort) continue;
 
       // Forecast arrays are nested inside the "data" property.
-      // We only process keys whose values are arrays.
+      // Process only keys whose values are arrays.
       const keys = Object.keys(botResort.data).filter(k => Array.isArray(botResort.data[k]));
 
       const daysForecast = [];
@@ -497,10 +491,8 @@ app.get('/api/forecast', async (req, res) => {
         daysForecast.push(dayData);
       }
 
-      // Reorder the daysForecast so that the current PST day is first.
-      const reorderedForecast = daysForecast.slice(currentIndex).concat(daysForecast.slice(0, currentIndex));
-
-      forecastResult[resortName] = { forecast: reorderedForecast };
+      // Do not rotate—the provider already supplies forecast starting with today's info at index 0.
+      forecastResult[resortName] = { forecast: daysForecast };
     }
 
     res.json({ forecast: forecastResult });
@@ -509,6 +501,7 @@ app.get('/api/forecast', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch forecast data.' });
   }
 });
+
 
 
 /***********************************************

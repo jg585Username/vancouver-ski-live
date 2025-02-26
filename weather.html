@@ -115,11 +115,21 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
-        /* New legend image styling */
+        /* Legend image under slideshow */
         #legend-image {
             margin-top: 10px;
             max-width: 100%;
             border-radius: 4px;
+            border: 2px solid #ccc;
+        }
+        .legend-figure {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .legend-caption {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #fff;
         }
         /* Backcountry Panel */
         .backcountry-info {
@@ -211,15 +221,17 @@
             </div>
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                 <img id="slideshow-image" alt="Slideshow" />
-                <!-- Legend image added below slideshow -->
-                <img id="legend-image" src="images/legend.png" alt="Legend" />
+                <figure class="legend-figure">
+                    <figcaption class="legend-caption">6-Day Weather</figcaption>
+                    <img id="legend-image" src="images/legend.png" alt="Legend" />
+                </figure>
             </div>
         </div>
     </div>
 
     <!-- FORECAST PANEL -->
     <div class="translucent-panel" id="forecast-panel">
-        <h1 style="font-size: 24px;">7-Day Forecast</h1>
+        <h1 style="font-size: 24px;">Weekly Forecast</h1>
         <div id="forecast-sections">
             <p>Loading forecast...</p>
         </div>
@@ -331,22 +343,18 @@
             .then(data => {
                 const forecastSections = document.getElementById('forecast-sections');
                 forecastSections.innerHTML = '';
-                // Static days array.
-                const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-                // Compute current PST weekday.
+                // Static weekdays array.
+                const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                // Get current PST day index.
                 const now = new Date();
-                const currentDay = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
-                const currentIndex = days.indexOf(currentDay);
-                // Rotate the days array so current PST day is first.
-                const orderedDays = days.slice(currentIndex).concat(days.slice(0, currentIndex));
+                const currentWeekday = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
+                const currentIndex = weekdays.indexOf(currentWeekday);
 
-                // Define the resort order.
+                // Define resort order.
                 const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
                     if (!resortData) return;
-                    // Rotate the forecast data array.
-                    const reorderedForecast = resortData.forecast.slice(currentIndex).concat(resortData.forecast.slice(0, currentIndex));
                     const resortSection = document.createElement('div');
                     resortSection.className = 'resort-forecast-section';
                     const header = document.createElement('h2');
@@ -356,12 +364,21 @@
                     const forecastRow = document.createElement('div');
                     forecastRow.className = 'forecast-row';
 
-                    reorderedForecast.forEach((dayData, idx) => {
+                    // Assume that index 0 is today's forecast.
+                    resortData.forecast.forEach((dayData, idx) => {
                         const panel = document.createElement('div');
                         panel.className = 'forecast-panel';
 
                         const dayHeader = document.createElement('h3');
-                        dayHeader.textContent = orderedDays[idx];
+                        if (idx === 0) {
+                            dayHeader.textContent = "Today";
+                        } else if (idx === 1) {
+                            dayHeader.textContent = "Tomorrow";
+                        } else {
+                            // Calculate the weekday for index idx.
+                            const dayLabel = weekdays[(currentIndex + idx) % 7];
+                            dayHeader.textContent = dayLabel;
+                        }
                         panel.appendChild(dayHeader);
 
                         // Dropdown for selecting forecast level.
@@ -405,6 +422,7 @@
 
 </body>
 </html>
+
 
 
 
