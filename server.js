@@ -436,15 +436,6 @@ async function scrapeImagesFromSnowForecast() {
 }
 scrapeImagesFromSnowForecast().then(urls => console.log('Found images:', urls));
 
-/***********************************************
- * New Forecast Endpoint (/api/forecast)
- ***********************************************/
-/***********************************************
- * New Forecast Endpoint (/api/forecast)
- ***********************************************/
-/***********************************************
- * New Forecast Endpoint (/api/forecast)
- ***********************************************/
 app.get('/api/forecast', async (req, res) => {
   try {
     // Fetch the three forecast datasets concurrently.
@@ -466,6 +457,27 @@ app.get('/api/forecast', async (req, res) => {
       "Mount-Seymour": 15  // Verify that this index exists in your data!
     };
 
+    // Helper function to transform a forecast value.
+    function transformForecast(key, val) {
+      // Remove "Blocks" from the key and convert to lowercase.
+      const newKey = key.replace("Blocks", "").toLowerCase();
+      let result;
+      if (Array.isArray(val)) {
+        if (val.length === 3) {
+          result = { morning: val[0], afternoon: val[1], night: val[2] };
+        } else if (val.length === 2) {
+          result = { afternoon: val[0], night: val[1] };
+        } else if (val.length === 1) {
+          result = { night: val[0] };
+        } else {
+          result = val; // Fallback if the array length is unexpected.
+        }
+      } else {
+        result = val;
+      }
+      return { [newKey]: result };
+    }
+
     const forecastResult = {};
 
     // For each desired resort, build a 7-day forecast.
@@ -484,9 +496,15 @@ app.get('/api/forecast', async (req, res) => {
       for (let day = 0; day < 7; day++) {
         const dayData = { base: {}, mid: {}, top: {} };
         keys.forEach(key => {
-          dayData.base[key] = botResort.data[key][day] ?? null;
-          dayData.mid[key] = midResort.data[key][day] ?? null;
-          dayData.top[key] = topResort.data[key][day] ?? null;
+          // Grab raw values.
+          const baseVal = botResort.data[key][day] ?? null;
+          const midVal = midResort.data[key][day] ?? null;
+          const topVal = topResort.data[key][day] ?? null;
+
+          // Transform each raw value.
+          Object.assign(dayData.base, transformForecast(key, baseVal));
+          Object.assign(dayData.mid, transformForecast(key, midVal));
+          Object.assign(dayData.top, transformForecast(key, topVal));
         });
         daysForecast.push(dayData);
       }
@@ -501,6 +519,7 @@ app.get('/api/forecast', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch forecast data.' });
   }
 });
+
 
 
 

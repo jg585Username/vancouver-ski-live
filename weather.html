@@ -115,21 +115,20 @@
             border: 2px solid #ccc;
             border-radius: 4px;
         }
-        /* Legend image under slideshow */
-        #legend-image {
-            margin-top: 10px;
-            max-width: 100%;
-            border-radius: 4px;
-            border: 2px solid #ccc;
-        }
+        /* Legend image with caption */
         .legend-figure {
             margin-top: 10px;
             text-align: center;
         }
         .legend-caption {
-            margin-bottom: 5px;
+            margin-bottom: 10px;  /* margin below caption */
             font-size: 0.9rem;
             color: #fff;
+        }
+        #legend-image {
+            max-width: 100%;
+            border-radius: 4px;
+            border: 2px solid #ccc;
         }
         /* Backcountry Panel */
         .backcountry-info {
@@ -222,7 +221,7 @@
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                 <img id="slideshow-image" alt="Slideshow" />
                 <figure class="legend-figure">
-                    <figcaption class="legend-caption">6-Day Weather</figcaption>
+                    <figcaption class="legend-caption">6-Day Weather Legend</figcaption>
                     <img id="legend-image" src="images/legend.png" alt="Legend" />
                 </figure>
             </div>
@@ -231,7 +230,6 @@
 
     <!-- FORECAST PANEL -->
     <div class="translucent-panel" id="forecast-panel">
-        <h1 style="font-size: 24px;">Weekly Forecast</h1>
         <div id="forecast-sections">
             <p>Loading forecast...</p>
         </div>
@@ -251,6 +249,37 @@
 </main>
 
 <script>
+    // Helper function to format forecast attributes.
+    function formatAttribute(key, value) {
+        // Remove "Blocks" from the key.
+        let label = key.replace('Blocks', '');
+        // Special-case: if the attribute is "freezinglevel", change it to "Freezing Level"
+        if (label.toLowerCase() === 'freezinglevel') {
+            label = 'Freezing Level';
+        } else {
+            label = label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
+        if (Array.isArray(value)) {
+            let output = `<strong>${label}:</strong><br>`;
+            if (value.length === 3) {
+                output += `Morning: ${value[0]}<br>Afternoon: ${value[1]}<br>Night: ${value[2]}`;
+            } else if (value.length === 2) {
+                output += `Afternoon: ${value[0]}<br>Night: ${value[1]}`;
+            } else if (value.length === 1) {
+                output += `Night: ${value[0]}`;
+            } else {
+                output += value.join(', ');
+            }
+            return output;
+        } else if (typeof value === 'object' && value !== null) {
+            return `<strong>${label}:</strong> ${JSON.stringify(value)}`;
+        } else {
+            return `<strong>${label}:</strong> ${value}`;
+        }
+    }
+
+
     document.addEventListener("DOMContentLoaded", function() {
         /***********************************************
          * Fetch & Display Snow Reports
@@ -343,14 +372,26 @@
             .then(data => {
                 const forecastSections = document.getElementById('forecast-sections');
                 forecastSections.innerHTML = '';
-                // Static weekdays array.
+                // Define a static weekdays array.
                 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-                // Get current PST day index.
+                // Get current PST date.
                 const now = new Date();
-                const currentWeekday = new Intl.DateTimeFormat('en-US', { timeZone: "America/Los_Angeles", weekday: "long" }).format(now);
-                const currentIndex = weekdays.indexOf(currentWeekday);
+                const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+                // Build day labels for the next 7 days:
+                const dayLabels = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(pstNow);
+                    d.setDate(pstNow.getDate() + i);
+                    if (i === 0) {
+                        dayLabels.push("Today");
+                    } else if (i === 1) {
+                        dayLabels.push("Tomorrow");
+                    } else {
+                        dayLabels.push(d.toLocaleDateString('en-US', { weekday: 'long' }));
+                    }
+                }
 
-                // Define resort order.
+                // Define the resort order.
                 const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
@@ -364,29 +405,21 @@
                     const forecastRow = document.createElement('div');
                     forecastRow.className = 'forecast-row';
 
-                    // Assume that index 0 is today's forecast.
+                    // Assume API data is ordered so index 0 = today, index 1 = tomorrow, etc.
                     resortData.forecast.forEach((dayData, idx) => {
                         const panel = document.createElement('div');
                         panel.className = 'forecast-panel';
 
                         const dayHeader = document.createElement('h3');
-                        if (idx === 0) {
-                            dayHeader.textContent = "Today";
-                        } else if (idx === 1) {
-                            dayHeader.textContent = "Tomorrow";
-                        } else {
-                            // Calculate the weekday for index idx.
-                            const dayLabel = weekdays[(currentIndex + idx) % 7];
-                            dayHeader.textContent = dayLabel;
-                        }
+                        dayHeader.textContent = dayLabels[idx] || "";
                         panel.appendChild(dayHeader);
 
                         // Dropdown for selecting forecast level.
                         const select = document.createElement('select');
                         select.className = 'level-select';
                         select.innerHTML = `<option value="base">Base</option>
-                                        <option value="mid">Mid</option>
-                                        <option value="top">Top</option>`;
+                                            <option value="mid">Mid</option>
+                                            <option value="top">Top</option>`;
                         panel.appendChild(select);
 
                         // Container for forecast details.
@@ -400,7 +433,7 @@
                             const attributes = dayData[level];
                             for (const key in attributes) {
                                 const p = document.createElement('p');
-                                p.innerHTML = `<strong>${key}:</strong> ${attributes[key]}`;
+                                p.innerHTML = formatAttribute(key, attributes[key]);
                                 detailsDiv.appendChild(p);
                             }
                         }
@@ -422,6 +455,7 @@
 
 </body>
 </html>
+
 
 
 
