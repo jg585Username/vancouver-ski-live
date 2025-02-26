@@ -445,3 +445,97 @@ async function scrapesBackcountryInfo() {
 
 // Example usage
 scrapesBackcountryInfo();
+
+// testFormatAttribute.js
+
+/**
+ * Strips "Blocks" from the key, converts "freezinglevel" to "Freezing Level",
+ * appends units (cm, °C, km/h, mm, m) to numeric values, and labels arrays
+ * as Morning, Afternoon, Night (or partial).
+ */
+function formatAttribute(key, value) {
+    // 1. Remove "Blocks" suffix (case-insensitive)
+    let label = key.replace(/Blocks$/i, '');
+    // 2. Handle "freezinglevel" => "Freezing Level"
+    if (label.toLowerCase() === 'freezinglevel') {
+        label = 'Freezing Level';
+    } else {
+        // Capitalize first letter
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    // 3. Unit mapping
+    const unitMap = {
+        "Snow": " cm",
+        "Temperature": " °C",
+        "Wind": " km/h",
+        "Rain": " mm",
+        "Freezing Level": " m"
+    };
+    const unit = unitMap[label] || "";
+
+    // 4. Helper to parse & append unit if numeric
+    function parseAndAppendUnit(val) {
+        if (val === "-" || val == null || val === "") {
+            return val; // keep placeholder or empty values
+        }
+        const str = String(val).trim();
+        const num = parseFloat(str);
+        if (!isNaN(num)) {
+            return num + unit;
+        }
+        return val;
+    }
+
+    // 5. Handle arrays => label them
+    if (Array.isArray(value)) {
+        let output = `<strong>${label}:</strong><br>`;
+        const length = value.length;
+        if (length === 3) {
+            output += `Morning: ${parseAndAppendUnit(value[0])}<br>`;
+            output += `Afternoon: ${parseAndAppendUnit(value[1])}<br>`;
+            output += `Night: ${parseAndAppendUnit(value[2])}`;
+        } else if (length === 2) {
+            output += `Afternoon: ${parseAndAppendUnit(value[0])}<br>`;
+            output += `Night: ${parseAndAppendUnit(value[1])}`;
+        } else if (length === 1) {
+            output += `Night: ${parseAndAppendUnit(value[0])}`;
+        } else {
+            output += value.map(parseAndAppendUnit).join(', ');
+        }
+        return output;
+    }
+    // If it's an object, not an array => just JSON.stringify
+    else if (typeof value === 'object' && value !== null) {
+        return `<strong>${label}:</strong> ${JSON.stringify(value)}`;
+    }
+    // Otherwise single value
+    else {
+        return `<strong>${label}:</strong> ${parseAndAppendUnit(value)}`;
+    }
+}
+
+// -------------------------------------------------------------
+// TESTING THE FUNCTION
+// -------------------------------------------------------------
+
+// Create an array of sample test cases to confirm the behavior:
+const testCases = [
+    { key: "temperatureBlocks", value: [ "7", "8.5", "2" ] },
+    { key: "snowBlocks", value: [3, "-", 6] },
+    { key: "windBlocks", value: ["10", "15", "5"] },
+    { key: "rainBlocks", value: 2 },
+    { key: "freezingLevelBlocks", value: [1600, 1300, 1450] },
+    { key: "snowBlocks", value: "-" },
+    { key: "temperatureBlocks", value: null },
+    { key: "snowBlocks", value: [ "  6.2", "test", "4.1" ] },  // mixed array
+    { key: "randomKeyBlocks", value: "123" },                  // no known unit
+    { key: "randomObjBlocks", value: { foo: "bar" } },         // an object
+    { key: "temperature", value: [5] },                        // no "Blocks" suffix
+];
+
+// We'll just loop over them and log out the result:
+testCases.forEach(({ key, value }) => {
+    const result = formatAttribute(key, value);
+    console.log(`Key: "${key}"  Value:`, value, "\n=>", result, "\n");
+});
