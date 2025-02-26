@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <title>Webcams - Ski Vancouver Status</title>
     <link rel="icon" href="images/ai_generated_logo.png" type="image/png">
+    <!-- Include Chart.js from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         /* General Reset */
         * {
@@ -121,7 +124,7 @@
             text-align: center;
         }
         .legend-caption {
-            margin-bottom: 10px;  /* margin below caption */
+            margin-bottom: 10px;
             font-size: 0.9rem;
             color: #fff;
         }
@@ -163,11 +166,9 @@
             flex-wrap: nowrap;
             overflow-x: auto;
             padding-bottom: 1rem;
-            /* optional: add a subtle scrollbar style if you like */
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: #555 #222; /* Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: #555 #222;
         }
-
         /* Each forecast panel */
         .forecast-panel {
             background-color: rgba(255, 255, 255, 0.1);
@@ -175,26 +176,20 @@
             border-radius: 10px;
             padding: 1rem 1.2rem;
             text-align: center;
-            flex: 0 0 auto; /* so they remain side by side, scrollable */
+            flex: 0 0 auto;
             min-width: 200px;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-
-        /* Hover effect on the panel: slight lift and glow */
         .forecast-panel:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 15px rgba(255, 255, 255, 0.3);
         }
-
-        /* Day header styling inside each forecast panel */
         .forecast-panel h3 {
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
             letter-spacing: 0.5px;
         }
-
-        /* The dropdown for base/mid/top */
         .level-select {
             margin-bottom: 0.5rem;
             background: rgba(255, 255, 255, 0.1);
@@ -213,13 +208,24 @@
             background: #333;
             color: #fff;
         }
-
-        /* Forecast details paragraphs */
         .forecast-details p {
             margin: 0.4rem 0;
             font-size: 0.9rem;
             line-height: 1.4;
             text-align: left;
+        }
+        /* ================ Chart Container ================ */
+        #chart-panel {
+            width: 90%;
+            max-width: 900px;
+            margin-bottom: 2rem;
+        }
+
+        #forecastChart {
+            background-color: #d3dbe6;  /* white background behind the chart */
+            border-radius: 8px;      /* rounded corners */
+            padding: 1rem;           /* internal padding so the chart doesn’t stick to the edges */
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3); /* optional box-shadow for contrast */
         }
         @media (max-width: 600px) {
             .translucent-panel {
@@ -274,6 +280,12 @@
         </div>
     </div>
 
+    <!-- CHART PANEL -->
+    <div class="translucent-panel" id="chart-panel">
+        <h2 style="text-align:center;">Graphical Forecast</h2>
+        <canvas id="forecastChart" width="800" height="400"></canvas>
+    </div>
+
     <!-- BACKCOUNTRY PANEL -->
     <div class="translucent-panel" id="backcountry-panel">
         <h1>Backcountry</h1>
@@ -288,21 +300,16 @@
 </main>
 
 <script>
-    // Helper function to format forecast attributes.
+    // ====================== formatAttribute Function ======================
     function formatAttribute(key, value) {
-        // 1. Remove "Blocks" suffix, case-insensitive (e.g. "temperatureBlocks" => "temperature")
         let label = key.replace(/Blocks$/i, '');
-
-        // 2. Convert "freezinglevel" => "Freezing Level", else capitalize first letter
         if (label.toLowerCase() === 'freezinglevel') {
             label = 'Freezing Level';
         } else if (label.toLowerCase() === 'phrases') {
             label = 'Weather';
-        }else {
+        } else {
             label = label.charAt(0).toUpperCase() + label.slice(1);
         }
-
-        // 3. Unit mapping: define which label gets which unit
         const unitMap = {
             "Snow": " cm",
             "Temperature": " °C",
@@ -311,24 +318,16 @@
             "Freezing Level": " m"
         };
         const unit = unitMap[label] || "";
-
-        // 4. A helper that always appends the unit if the value is numeric
         function parseAndAppendUnit(val) {
             if (val === "-" || val == null || val === "") {
-                // For placeholders or empty strings, return as is
                 return val;
             }
-            // Try to parse as float
             const num = parseFloat(String(val).trim());
             if (!isNaN(num)) {
-                // If numeric, append the unit
                 return num + unit;
             }
-            // Otherwise, just return the original string
             return val;
         }
-
-        // 5a. If it's an array (e.g. [7,8,2]), handle as Morning/Afternoon/Night
         if (Array.isArray(value)) {
             let output = `<strong>${label}:</strong><br>`;
             const length = value.length;
@@ -342,21 +341,14 @@
             } else if (length === 1) {
                 output += `Night: ${parseAndAppendUnit(value[0])}`;
             } else {
-                // If array length is unexpected, just join them
                 output += value.map(parseAndAppendUnit).join(', ');
             }
             return output;
-        }
-
-        // 5b. If it's an object, check for morning/afternoon/night structure
-        else if (typeof value === 'object' && value !== null) {
-            // If the object has morning/afternoon/night keys
+        } else if (typeof value === 'object' && value !== null) {
             const hasMorning = Object.prototype.hasOwnProperty.call(value, 'morning');
             const hasAfternoon = Object.prototype.hasOwnProperty.call(value, 'afternoon');
             const hasNight = Object.prototype.hasOwnProperty.call(value, 'night');
-
             if (hasMorning || hasAfternoon || hasNight) {
-                // We'll build a similar string with lines
                 let output = `<strong>${label}:</strong><br>`;
                 if (hasMorning) {
                     output += `Morning: ${parseAndAppendUnit(value.morning)}<br>`;
@@ -369,18 +361,96 @@
                 }
                 return output;
             } else {
-                // Fallback: just show the entire object as JSON
                 return `<strong>${label}:</strong> ${JSON.stringify(value)}`;
             }
-        }
-
-        // 5c. Otherwise, a single value => parse + append unit if numeric
-        else {
+        } else {
             return `<strong>${label}:</strong> ${parseAndAppendUnit(value)}`;
         }
     }
 
+    /***********************************************
+     * Chart.js Global (We will fill data after fetch)
+     ***********************************************/
+    let forecastChart; // We'll store our chart instance here.
 
+    // This function will build or update the chart.
+    function renderChart(labels, snowData, rainData, freezeData) {
+        const ctx = document.getElementById('forecastChart').getContext('2d');
+        // If chart already exists, destroy it first (in case we re-render).
+        if (forecastChart) {
+            forecastChart.destroy();
+        }
+        forecastChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Snow (cm)',
+                        data: snowData,
+                        backgroundColor: 'rgba(0, 100, 255, 0.6)',
+                        borderColor: 'rgba(0, 100, 255, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'yLeft'
+                    },
+                    {
+                        label: 'Rain (mm)',
+                        data: rainData,
+                        backgroundColor: 'rgba(0, 200, 0, 0.5)',
+                        borderColor: 'rgba(0, 200, 0, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'yLeft'
+                    },
+                    {
+                        label: 'Freezing Level (m)',
+                        data: freezeData,
+                        type: 'line',
+                        borderColor: 'orange',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        yAxisID: 'yRight'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    yLeft: {
+                        type: 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Snow (cm) / Rain (mm)'
+                        },
+                        grid: {
+                            drawOnChartArea: true
+                        }
+                    },
+                    yRight: {
+                        type: 'linear',
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Freezing Level (m)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         /***********************************************
@@ -467,33 +537,40 @@
         startSlideshow();
 
         /***********************************************
-         * Fetch & Display Forecast Data from /api/forecast
+         * Fetch & Display Forecast Data (and Build Chart)
          ***********************************************/
         fetch('/api/forecast')
             .then(response => response.json())
             .then(data => {
                 const forecastSections = document.getElementById('forecast-sections');
                 forecastSections.innerHTML = '';
-                // Define a static weekdays array.
+
+                // For the chart:
+                const dayLabels = [];
+                const snowData = [];
+                const rainData = [];
+                const freezeData = [];
+
+                // static weekdays
                 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-                // Get current PST date.
                 const now = new Date();
                 const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-                // Build day labels for the next 7 days:
-                const dayLabels = [];
+
+                // Build day labels for next 7 days
+                const dynamicDayLabels = [];
                 for (let i = 0; i < 7; i++) {
                     const d = new Date(pstNow);
                     d.setDate(pstNow.getDate() + i);
                     if (i === 0) {
-                        dayLabels.push("Today");
+                        dynamicDayLabels.push("Today");
                     } else if (i === 1) {
-                        dayLabels.push("Tomorrow");
+                        dynamicDayLabels.push("Tomorrow");
                     } else {
-                        dayLabels.push(d.toLocaleDateString('en-US', { weekday: 'long' }));
+                        dynamicDayLabels.push(d.toLocaleDateString('en-US', { weekday: 'long' }));
                     }
                 }
 
-                // Define the resort order.
+                // We'll build forecast panels for Cypress, Grouse, Seymour
                 const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
                 resortOrder.forEach(resortName => {
                     const resortData = data.forecast[resortName];
@@ -507,16 +584,17 @@
                     const forecastRow = document.createElement('div');
                     forecastRow.className = 'forecast-row';
 
-                    // Assume API data is ordered so index 0 = today, index 1 = tomorrow, etc.
+                    // We assume 7-day forecast => resortData.forecast is array of length 7
                     resortData.forecast.forEach((dayData, idx) => {
                         const panel = document.createElement('div');
                         panel.className = 'forecast-panel';
 
+                        // Label for the day
                         const dayHeader = document.createElement('h3');
-                        dayHeader.textContent = dayLabels[idx] || "";
+                        dayHeader.textContent = dynamicDayLabels[idx] || "";
                         panel.appendChild(dayHeader);
 
-                        // Dropdown for selecting forecast level.
+                        // Dropdown (base, mid, top)
                         const select = document.createElement('select');
                         select.className = 'level-select';
                         select.innerHTML = `<option value="base">Base</option>
@@ -524,11 +602,12 @@
                                             <option value="top">Top</option>`;
                         panel.appendChild(select);
 
-                        // Container for forecast details.
+                        // Forecast details
                         const detailsDiv = document.createElement('div');
                         detailsDiv.className = 'forecast-details';
                         panel.appendChild(detailsDiv);
 
+                        // Function to re-render panel details
                         function updateDetails() {
                             const level = select.value;
                             detailsDiv.innerHTML = '';
@@ -543,10 +622,32 @@
                         updateDetails();
 
                         forecastRow.appendChild(panel);
+
+                        // ========== For Chart: We'll just gather "base" data as an example ==========
+                        if (resortName === "Cypress-Mountain") {
+                            // Suppose base-level has "snow", "rain", "freezinglevel" keys
+                            // We'll grab them from dayData.base
+                            const baseKeys = dayData.base;
+                            // For day i, let's push to arrays
+                            if (idx === 0) {
+                                // If dayLabels array isn't built up enough, push day label
+                                dayLabels.push(dynamicDayLabels[idx]);
+                            }
+                            // numeric parse or default 0
+                            const snowVal = parseFloat(baseKeys?.snow ?? 0) || 0;
+                            const rainVal = parseFloat(baseKeys?.rain ?? 0) || 0;
+                            const freezeVal = parseFloat(baseKeys?.freezinglevel ?? 0) || 0;
+                            snowData.push(snowVal);
+                            rainData.push(rainVal);
+                            freezeData.push(freezeVal);
+                        }
                     });
                     resortSection.appendChild(forecastRow);
                     forecastSections.appendChild(resortSection);
                 });
+
+                // ============== Finally, render chart with base-level data (Cypress) ==============
+                renderChart(dayLabels, snowData, rainData, freezeData);
             })
             .catch(err => {
                 console.error("Error fetching forecast data:", err);
@@ -557,6 +658,7 @@
 
 </body>
 </html>
+
 
 
 
