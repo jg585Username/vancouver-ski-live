@@ -886,6 +886,11 @@
         const tbody = document.createElement('tbody');
 
         filtered.forEach(resort => {
+
+            if (resort.name.toLowerCase().includes('seymour')) {
+                resort.totalLifts = 4;
+            }
+
             const timeAgo = resort.timeAgo ? `${resort.timeAgo} ago` : '';
             const tr = document.createElement('tr');
 
