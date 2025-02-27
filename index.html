@@ -815,6 +815,9 @@
         if (str.includes("overcas")) {
             str = str.replace("overcas", "overcast");
         }
+        if (str.includes("light rai")) {
+            str = str.replace("light rai", "light rain");
+        }
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
