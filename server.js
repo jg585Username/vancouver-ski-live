@@ -438,28 +438,29 @@ scrapeImagesFromSnowForecast().then(urls => console.log('Found images:', urls));
 
 app.get('/api/forecast', async (req, res) => {
   try {
-    // Fetch the three forecast datasets concurrently.
+    // 1) Fetch all three forecast datasets concurrently.
     const [botData, midData, topData] = await Promise.all([
       fetch('https://snow-scraper.azurewebsites.net/bot').then(r => r.json()),
       fetch('https://snow-scraper.azurewebsites.net/mid').then(r => r.json()),
       fetch('https://snow-scraper.azurewebsites.net/top').then(r => r.json())
     ]);
 
-    // Ensure each contains a resorts array.
+    // 2) Ensure each contains a resorts array.
     if (!botData.resorts || !midData.resorts || !topData.resorts) {
       throw new Error('Missing resorts data in one of the responses.');
     }
 
-    // Mapping of desired resort names to their index in the resorts array.
+    // 3) Mapping of resort names to their index in the resorts array
     const resortIndices = {
       "Cypress-Mountain": 3,
       "Grouse-Mountain": 6,
-      "Mount-Seymour": 15  // Verify that this index exists in your data!
+      "Mount-Seymour": 15  // verify that index 15 is correct for your data
     };
 
-    // 1) Convert key => newKey, store arrays or single value as object { morning, ...}
+    // 4) Transform raw arrays => { morning, afternoon, night }
     function transformForecast(key, val) {
-      const newKey = key.replace("Blocks", "").toLowerCase(); // e.g. "snowBlocks" => "snow"
+      const newKey = key.replace("Blocks", "").toLowerCase();
+      // e.g. "snowBlocks" => "snow"
       let result;
       if (Array.isArray(val)) {
         if (val.length === 3) {
@@ -469,7 +470,7 @@ app.get('/api/forecast', async (req, res) => {
         } else if (val.length === 1) {
           result = { night: val[0] };
         } else {
-          // fallback
+          // fallback if 4+ or 0 length
           result = val;
         }
       } else {
@@ -478,25 +479,37 @@ app.get('/api/forecast', async (req, res) => {
       return { [newKey]: result };
     }
 
-    // 2) For chart usage, produce a single numeric by summing array or partial object
+    // 5) sumForecast for snow & rain (morning + afternoon + night)
     function sumForecast(val) {
-      // If it's an array, try summing
       if (Array.isArray(val)) {
-        return val.reduce((acc, x) => acc + parseFloat(x || 0) || 0, 0);
+        return val.reduce((acc, x) => acc + (parseFloat(x) || 0), 0);
       }
-      // If it's an object with morning/afternoon/night, sum those
       if (val && typeof val === 'object') {
         const m = parseFloat(val.morning || 0) || 0;
         const a = parseFloat(val.afternoon || 0) || 0;
         const n = parseFloat(val.night || 0) || 0;
         return m + a + n;
       }
-      // Otherwise parse single numeric or default 0
+      return parseFloat(val || 0) || 0;
+    }
+
+    // 6) maxForecast for freezing level
+    function maxForecast(val) {
+      if (Array.isArray(val)) {
+        return Math.max(...val.map(x => parseFloat(x) || 0));
+      }
+      if (val && typeof val === 'object') {
+        const m = parseFloat(val.morning || 0) || 0;
+        const a = parseFloat(val.afternoon || 0) || 0;
+        const n = parseFloat(val.night || 0) || 0;
+        return Math.max(m, a, n);
+      }
       return parseFloat(val || 0) || 0;
     }
 
     const forecastResult = {};
 
+    // 7) For each desired resort, build a 7-day forecast
     for (const resortName in resortIndices) {
       const index = resortIndices[resortName];
       const botResort = botData.resorts[index];
@@ -504,47 +517,46 @@ app.get('/api/forecast', async (req, res) => {
       const topResort = topData.resorts[index];
       if (!botResort || !midResort || !topResort) continue;
 
-      // We'll process only keys that have array data in botResort
+      // We'll process only keys that have array data in bot
       const keys = Object.keys(botResort.data).filter(k => Array.isArray(botResort.data[k]));
 
       const daysForecast = [];
       for (let day = 0; day < 7; day++) {
-        // dayData holds base/mid/top
+        // each day => base, mid, top
         const dayData = { base: {}, mid: {}, top: {} };
-        keys.forEach(key => {
-          // raw values
-          const baseVal = botResort.data[key][day] ?? null;
-          const midVal = midResort.data[key][day] ?? null;
-          const topVal = topResort.data[key][day] ?? null;
 
-          // e.g. transform "snowBlocks" => {snow:{morning:...,afternoon:...,night:...}}
+        // transform raw arrays => {morning,afternoon,night}
+        keys.forEach(key => {
+          const baseVal = botResort.data[key][day] ?? null;
+          const midVal  = midResort.data[key][day] ?? null;
+          const topVal  = topResort.data[key][day] ?? null;
+
           Object.assign(dayData.base, transformForecast(key, baseVal));
-          Object.assign(dayData.mid, transformForecast(key, midVal));
-          Object.assign(dayData.top, transformForecast(key, topVal));
+          Object.assign(dayData.mid,  transformForecast(key, midVal));
+          Object.assign(dayData.top,  transformForecast(key, topVal));
         });
 
-        // ========== OPTIONAL: Produce single numeric for "snow", "rain", "freezinglevel" for charting ==========
-        // e.g. dayData.base.snow = sum of array or partial object
-        // If it doesn't exist, default 0
-        dayData.base.snow = sumForecast(dayData.base.snow);
-        dayData.base.rain = sumForecast(dayData.base.rain);
-        dayData.base.freezinglevel = sumForecast(dayData.base.freezinglevel);
+        // 8) For the chart’s numeric field:
+        // Snow & Rain => sum
+        // Freezing Level => max
+        dayData.base.snow          = sumForecast(dayData.base.snow);
+        dayData.base.rain          = sumForecast(dayData.base.rain);
+        dayData.base.freezinglevel = maxForecast(dayData.base.freezinglevel);
 
-        // same for mid/top if you want
-        dayData.mid.snow = sumForecast(dayData.mid.snow);
-        dayData.mid.rain = sumForecast(dayData.mid.rain);
-        dayData.mid.freezinglevel = sumForecast(dayData.mid.freezinglevel);
+        dayData.mid.snow           = sumForecast(dayData.mid.snow);
+        dayData.mid.rain           = sumForecast(dayData.mid.rain);
+        dayData.mid.freezinglevel  = maxForecast(dayData.mid.freezinglevel);
 
-        dayData.top.snow = sumForecast(dayData.top.snow);
-        dayData.top.rain = sumForecast(dayData.top.rain);
-        dayData.top.freezinglevel = sumForecast(dayData.top.freezinglevel);
+        dayData.top.snow           = sumForecast(dayData.top.snow);
+        dayData.top.rain           = sumForecast(dayData.top.rain);
+        dayData.top.freezinglevel  = maxForecast(dayData.top.freezinglevel);
 
         daysForecast.push(dayData);
       }
-
       forecastResult[resortName] = { forecast: daysForecast };
     }
 
+    // 9) Return final JSON
     res.json({ forecast: forecastResult });
   } catch (err) {
     console.error('Error fetching forecast data:', err);
