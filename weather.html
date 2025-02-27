@@ -602,7 +602,11 @@
                     const resortSection = document.createElement('div');
                     resortSection.className = 'resort-forecast-section';
                     const header = document.createElement('h2');
-                    header.textContent = resortName + " Forecast";
+                    const resortLink = document.createElement('a');
+                    resortLink.href = 'https://skibc.tech/';
+                    resortLink.textContent = resortName + " Forecast";
+                    resortLink.style.color = "#0000EE";
+                    header.appendChild(resortLink);
                     resortSection.appendChild(header);
 
                     const forecastRow = document.createElement('div');
