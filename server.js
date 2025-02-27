@@ -403,7 +403,7 @@ async function scrapeEyeballReports() {
 // 9) Scrape Backcountry Info
 async function scrapesBackcountryInfo() {
   try {
-    const url = 'https://opensnow.com/avalanche/2eed5e9c3bd0ef7958755c829723bd0d820795204ab91687e7c2005265f62e81';
+    const url = 'https://opensnow.com/location/cypressmountainnordic/avalanche-forecast';
     const { data: html } = await axios.get(url);
     const $ = cheerio.load(html);
     const ratingImg = $('.AvalancheForecast__dangerHeader img').attr('src') || '';

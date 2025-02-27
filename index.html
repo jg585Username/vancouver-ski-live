@@ -809,6 +809,9 @@
     function formatWeatherType(rawType) {
         if (!rawType || rawType === "N/A") return "—";
         let str = rawType.toLowerCase().replace(/_/g, " ");
+        if (str.includes("overcas")) {
+            str = str.replace("overcas", "overcast");
+        }
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
