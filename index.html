@@ -766,6 +766,7 @@
 
     // ========== Fetch endpoints for each mountain ==========
     async function fetchCypress() {
+        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
         try {
             const response = await fetch('/api/cypress-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
@@ -777,6 +778,7 @@
         }
     }
     async function fetchGrouse() {
+        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
         try {
             const response = await fetch('/api/grouse-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
@@ -788,6 +790,7 @@
         }
     }
     async function fetchSeymour() {
+        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
         try {
             const response = await fetch('/api/seymour-lifts');
             if (!response.ok) throw new Error('Network response was not ok');
