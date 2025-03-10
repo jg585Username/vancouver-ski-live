@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3000;
 // 1) Scrape Cypress Lifts (including runs)
 async function scrapeCypressLifts() {
   try {
-    const url = 'https://www.cypressmountain.com/api/reportpal?resortName=cy';
+    const url = 'https://www.cypressmountain.com/api/reportpal?resortName=cy&useReportPal=true';
     const { data } = await axios.get(url);
     const areas = data?.facilities?.areas?.area || [];
     const trailDifficultyIcons = data?.icons?.trailDifficultyIcons || {};
@@ -59,7 +59,7 @@ async function scrapeCypressLifts() {
 // 2) Scrape Cypress base depth
 async function scrapeCypressBaseDepth() {
   try {
-    const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
+    const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy&useReportPal=true";
     const { data } = await axios.get(url);
     const cm = data?.currentConditions?.resortLocations?.location?.[0]?.base?.centimeters ?? null;
     console.log("Cypress base depth (cm):", cm);
@@ -73,7 +73,7 @@ async function scrapeCypressBaseDepth() {
 // 3) Scrape Cypress Updates
 async function scrapeCypressUpdates() {
   try {
-    const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy";
+    const url = "https://www.cypressmountain.com/api/reportpal?resortName=cy&useReportPal=true";
     const { data } = await axios.get(url);
     const text = data?.comments?.comment?.[0]?.text ?? null;
     const update = text
