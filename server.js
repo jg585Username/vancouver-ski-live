@@ -347,7 +347,7 @@ async function scrapeSeymourAll() {
 
 // 7) OnTheSnow Weather (Existing)
 async function getWeather() {
-  const url = "https://www.onthesnow.com/_next/data/2.7.0_en-US/vancouver/open-resorts.json?region=vancouver";
+  const url = "https://www.onthesnow.com/_next/data/2.7.3_en-US/vancouver/open-resorts.json?region=vancouver";
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Request failed with status: ${response.status}`);
