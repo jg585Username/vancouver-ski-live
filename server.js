@@ -84,7 +84,7 @@ async function scrapeCypressUpdates() {
         .replace(/[\r\n]*_{5,}[\r\n]*/g, '\n')
         .replace(/\s{2,}/g, ' ')
         .trim()
-        .split("PARKING")[0]
+        .split("Parking")[0]
         .trim();
     console.log("Update from Cypress Staff:", update);
     return update;
