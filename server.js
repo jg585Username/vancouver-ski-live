@@ -81,6 +81,7 @@ async function scrapeCypressUpdates() {
         .replace(/<[^>]+>/g, '')
         .replace(/&bull;/g, '•')
         .replace(/&nbsp;/g, ' ')
+        .replace(/[\r\n]*_{5,}[\r\n]*/g, '\n')
         .replace(/\s{2,}/g, ' ')
         .trim()
         .split("PARKING")[0]
