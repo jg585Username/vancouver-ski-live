@@ -549,7 +549,7 @@
     <div class="translucent-panel" id="ticketPricePanel">
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
-            Lift ticket price changes this week (Seymour is not accurate due to complicated price scheming)<br>
+           Reference Prices for 25/26 Season<br>
         </p>
 
         <div class="dropdown-wrapper">
@@ -866,7 +866,7 @@
         container.innerHTML = '';
 
         if (!filtered.length) {
-            container.innerHTML = `<p>No weather data available.</p>`;
+            container.innerHTML = `<p>The 24/25 Ski Season has Ended. See Weather Tab for more info.</p>`;
             return;
         }
 
@@ -1009,7 +1009,99 @@
             initLiftTicketPriceChart();
         });
     });
+    function initLiftTicketPriceChart() {
+        const ageRange = document.getElementById('ageRangeSelect').value;
 
+        // 1) Your hard‑coded fallback dates & adult prices
+        const cypressDates     = [
+            "2025-01-30","2025-01-31","2025-02-01",
+            "2025-02-02","2025-02-03","2025-02-04","2025-02-05"
+        ];
+        const fallbackAdult    = [108, 110, 124, 124, 96, 96, 92];
+        const cypressPrices    = fallbackAdult.map(p => transformCypressPriceForAge(p, ageRange));
+
+        // 2) Derive grouse & seymour from the same dates
+        const grousePrices  = cypressDates.map(date => getGrousePrice(date, ageRange));
+        const seymourPrices = cypressDates.map(() => getSeymourPrice(ageRange));
+
+        // 3) Build nice labels for the X axis
+        function formatLabel(isoStr) {
+            const [yyyy, mm, dd] = isoStr.split("-");
+            const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            return `${monthNames[parseInt(mm,10)-1]} ${parseInt(dd,10)}`;
+        }
+        const chartLabels = cypressDates.map(formatLabel);
+
+        // 4) Render (or re‑render) the Chart.js line chart
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if (window.ticketPriceChart) window.ticketPriceChart.destroy();
+
+        window.ticketPriceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: "Cypress",
+                        data: cypressPrices,
+                        borderColor: "rgba(255,99,132,1)",
+                        backgroundColor: "rgba(255,99,132,0.2)",
+                        fill: true, tension: 0.2,
+                    },
+                    {
+                        label: "Grouse",
+                        data: grousePrices,
+                        borderColor: "rgba(54,162,235,1)",
+                        backgroundColor: "rgba(54,162,235,0.2)",
+                        fill: true, tension: 0.2,
+                    },
+                    {
+                        label: "Seymour",
+                        data: seymourPrices,
+                        borderColor: "rgba(75,192,192,1)",
+                        backgroundColor: "rgba(75,192,192,0.2)",
+                        fill: true, tension: 0.2,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: "#fff",
+                        titleColor: "#333",
+                        bodyColor: "#333",
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                    },
+                    legend: {
+                        labels: { color: "#fff" }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#fff" },
+                        grid: { color: "rgba(255,255,255,0.1)" }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            color: "#fff",
+                            callback: v => "$" + v.toFixed(2)
+                        },
+                        grid: { color: "rgba(255,255,255,0.1)" }
+                    }
+                },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false },
+                hover: { mode: 'nearest', intersect: false, animationDuration: 400 },
+                animation: { duration: 1000, easing: 'easeInOutQuart' }
+            }
+        });
+    }
+
+    /*
     async function initLiftTicketPriceChart() {
         const ageRange = document.getElementById('ageRangeSelect').value;
 
@@ -1145,6 +1237,7 @@
             }
         });
     }
+    */
 </script>
 </body>
 </html>
