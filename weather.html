@@ -289,7 +289,7 @@
 <main>
     <!-- SNOW REPORTS PANEL -->
     <div class="translucent-panel" id="snow-reports-panel">
-        <h1 style="font-size: 27px;">❅ Latest snow reports</h1>
+        <h1 style="font-size: 27px;">Latest Forecast Reports</h1>
         <div class="reports-slideshow-container" style="display: flex; gap: 1rem;">
             <div class="paragraphs-section" id="reports-container" style="flex: 1;">
                 <p>Loading reports...</p>
@@ -486,7 +486,11 @@
                         grid  : {
                             color     : '#ffff',   // light grey lines
                             lineWidth : 1,
-                            borderDash: [3,3]                 // dashed for “graph-paper” look
+                            borderDash: [3,3]
+                        },
+                        ticks: {
+                            color: '#ffff',
+                            font : { weight: '600'}
                         }
                     },
                     y : {
