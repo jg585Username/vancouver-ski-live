@@ -263,7 +263,7 @@
         }
 
         #tempChart{
-            background:#fff;              /* solid white */
+            background:rgba(255,255,255,0.25);
             border-radius:8px;            /* same rounding as other panels */
             padding:1rem;                 /* space between plot & border */
             box-shadow:0 3px 10px rgba(0,0,0,.3); /* subtle lift */
@@ -480,11 +480,11 @@
                 responsive:true,aspectRatio:1.8,
                 scales : {
                     x : {
-                        title : { display:true, text:'Temperature (°C)' },
+                        title : { display:true, text:'Temperature (°C)', color:'#fff' },
                         min   : -6,
                         max   : 18,
                         grid  : {
-                            color     : 'rgba(0,0,0,0.10)',   // light grey lines
+                            color     : '#ffff',   // light grey lines
                             lineWidth : 1,
                             borderDash: [3,3]                 // dashed for “graph-paper” look
                         }
@@ -493,9 +493,12 @@
                         type  : 'category',
                         labels: resorts.map(pretty),
                         grid  : {
-                            color     : 'rgba(0,0,0,0.10)',
+                            color     : '#ffff',
                             lineWidth : 1,
                             borderDash: [3,3]
+                        },
+                        ticks : {
+                            color: '#ffff'
                         }
                     }
                 },
