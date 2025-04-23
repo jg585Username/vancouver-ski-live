@@ -248,6 +248,26 @@
                 align-items: center;
             }
         }
+        /* ===  temperature panel  === */
+        #temp-panel canvas{
+            background:#fff;
+            border-radius:8px;
+            padding:1rem;
+            box-shadow:0 3px 10px rgba(0,0,0,.3);
+        }
+        .temp-controls select{
+            font-size:1rem;
+            padding:.25rem .5rem;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+
+        #tempChart{
+            background:#fff;              /* solid white */
+            border-radius:8px;            /* same rounding as other panels */
+            padding:1rem;                 /* space between plot & border */
+            box-shadow:0 3px 10px rgba(0,0,0,.3); /* subtle lift */
+        }
     </style>
 </head>
 <body>
@@ -302,6 +322,27 @@
         </select>
         <canvas id="forecastChart" width="800" height="400"></canvas>
     </div>
+    <!-- add near the Graphical-Forecast panel, before Backcountry  -->
+    <div class="translucent-panel">
+        <h2 style="text-align:center;">Current Temperatures</h2>
+
+        Level:
+        <select id="temp-level">
+            <option value="base">Base</option>
+            <option value="mid">Mid</option>
+            <option value="top">Top</option>
+        </select>
+
+        Time:
+        <select id="temp-time">
+            <option value="morning">Morning</option>
+            <option value="afternoon" selected>Afternoon</option>
+            <option value="night">Night</option>
+        </select>
+
+        <canvas id="tempChart" height="300"></canvas>
+    </div>
+
 
     <!-- BACKCOUNTRY PANEL -->
     <div class="translucent-panel" id="backcountry-panel">
@@ -317,376 +358,271 @@
 </main>
 
 <script>
-    /***********************************************
-     * formatAttribute
-     ***********************************************/
+    /* ───────────────────────── helper: pretty attribute lines ─────────────── */
     function formatAttribute(key, value) {
         let label = key.replace(/Blocks$/i, '');
-        if (label.toLowerCase() === 'freezinglevel') {
-            label = 'Freezing Level';
-        } else if (label.toLowerCase() === 'phrases') {
-            label = 'Weather';
-        } else {
-            label = label.charAt(0).toUpperCase() + label.slice(1);
-        }
-        const unitMap = {
-            "Snow": " cm",
-            "Temperature": " °C",
-            "Wind": " km/h",
-            "Rain": " mm",
-            "Freezing Level": " m"
-        };
-        const unit = unitMap[label] || "";
+        if (label.toLowerCase() === 'freezinglevel') label = 'Freezing Level';
+        else if (label.toLowerCase() === 'phrases')   label = 'Weather';
+        else                                          label = label[0].toUpperCase() + label.slice(1);
 
-        function parseAndAppendUnit(val) {
-            if (val === "-" || val == null || val === "") {
-                return val;
-            }
-            const num = parseFloat(String(val).trim());
-            if (!isNaN(num)) {
-                return num + unit;
-            }
-            return val;
-        }
+        const units = {Snow:' cm', Temperature:' °C', Wind:' km/h',
+            Rain:' mm', 'Freezing Level':' m'}[label] || '';
+
+        const withUnit = v =>
+            (v===null||v==='-'||v==='') ? v :
+                (isFinite(+v) ? (+v) + units : v);
 
         if (Array.isArray(value)) {
-            let output = `<strong>${label}:</strong><br>`;
-            if (value.length === 3) {
-                output += `Morning: ${parseAndAppendUnit(value[0])}<br>`;
-                output += `Afternoon: ${parseAndAppendUnit(value[1])}<br>`;
-                output += `Night: ${parseAndAppendUnit(value[2])}`;
-            } else if (value.length === 2) {
-                output += `Afternoon: ${parseAndAppendUnit(value[0])}<br>`;
-                output += `Night: ${parseAndAppendUnit(value[1])}`;
-            } else if (value.length === 1) {
-                output += `Night: ${parseAndAppendUnit(value[0])}`;
-            } else {
-                output += value.map(parseAndAppendUnit).join(', ');
-            }
-            return output;
-        } else if (typeof value === 'object' && value !== null) {
-            const hasMorning = Object.prototype.hasOwnProperty.call(value, 'morning');
-            const hasAfternoon = Object.prototype.hasOwnProperty.call(value, 'afternoon');
-            const hasNight = Object.prototype.hasOwnProperty.call(value, 'night');
-            if (hasMorning || hasAfternoon || hasNight) {
-                let output = `<strong>${label}:</strong><br>`;
-                if (hasMorning) {
-                    output += `Morning: ${parseAndAppendUnit(value.morning)}<br>`;
-                }
-                if (hasAfternoon) {
-                    output += `Afternoon: ${parseAndAppendUnit(value.afternoon)}<br>`;
-                }
-                if (hasNight) {
-                    output += `Night: ${parseAndAppendUnit(value.night)}`;
-                }
-                return output;
-            } else {
-                return `<strong>${label}:</strong> ${JSON.stringify(value)}`;
-            }
-        } else {
-            return `<strong>${label}:</strong> ${parseAndAppendUnit(value)}`;
+            const [m,a,n] = value;
+            return `<strong>${label}:</strong><br>` +
+                (value.length===3 ? `Morning: ${withUnit(m)}<br>` : '') +
+                (value.length>=2 ? `Afternoon: ${withUnit(a)}<br>` : '') +
+                `Night: ${withUnit(value.at(-1))}`;
         }
+        if (value && typeof value === 'object') {
+            return `<strong>${label}:</strong><br>` +
+                (value.morning!==undefined ? `Morning: ${withUnit(value.morning)}<br>` : '') +
+                (value.afternoon!==undefined ? `Afternoon: ${withUnit(value.afternoon)}<br>` : '') +
+                (value.night!==undefined ? `Night: ${withUnit(value.night)}` : '');
+        }
+        return `<strong>${label}:</strong> ${withUnit(value)}`;
     }
 
-    /***********************************************
-     * Chart.js
-     ***********************************************/
-    let forecastChart;
-    // We'll store dayLabels once (same for all resorts), and numeric arrays per resort
-    const resortChartData = {
-        "Cypress-Mountain": {dayLabels: [], snowData: [], rainData: [], freezeData: []},
-        "Grouse-Mountain": {dayLabels: [], snowData: [], rainData: [], freezeData: []},
-        "Mount-Seymour": {dayLabels: [], snowData: [], rainData: [], freezeData: []}
+    /* ───────────────────────── global state & helpers ─────────────────────── */
+    let forecastCache = null;        // filled once /api/forecast resolves
+    let forecastChart, tempChart;
+    const bubbleLabel = {
+        id : 'bubbleLabel',
+        afterDatasetDraw(chart, args, opts){
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            chart.data.datasets[0].data.forEach((pt,i)=>{
+                const meta = chart.getDatasetMeta(0).data[i];
+                const { x, y } = meta.tooltipPosition();
+                ctx.fillStyle = '#000';          // text colour
+                ctx.fillText(`${pt.x}°`, x, y);  // draw value
+            });
+            ctx.restore();
+        }
     };
+    /* bar/line-chart data buckets (base-level) */
+    const resortChartData = {
+        'Cypress-Mountain': {labels:[], snow:[], rain:[], freeze:[]},
+        'Grouse-Mountain' : {labels:[], snow:[], rain:[], freeze:[]},
+        'Mount-Seymour'   : {labels:[], snow:[], rain:[], freeze:[]}
+    };
+    const resorts = ['Cypress-Mountain','Grouse-Mountain','Mount-Seymour'];
+    const pretty  = n => n.replace('-Mountain','');   // “Cypress”…
 
-    function renderChartForResort(resortName) {
-        // If the user picks a resort, we retrieve arrays from resortChartData
-        const {dayLabels, snowData, rainData, freezeData} = resortChartData[resortName];
-        renderChart(dayLabels, snowData, rainData, freezeData);
-    }
+    /* highest of object/array/num (for freezing-level) */
+    const highest = v => Array.isArray(v)   ? Math.max(...v.map(n=>+n||0)) :
+        (v&&typeof v==='object') ? Math.max(...Object.values(v).map(n=>+n||0)) :
+            +v||0;
 
-    function renderChart(labels, snowData, rainData, freezeData) {
+    /* ────────────────────────── draw bar/line chart ───────────────────────── */
+    function drawForecastChart(resort){
+        const {labels,snow,rain,freeze} = resortChartData[resort];
         const ctx = document.getElementById('forecastChart').getContext('2d');
-        if (forecastChart) {
-            forecastChart.destroy();
-        }
-        forecastChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels, // e.g. ["Today","Tomorrow","Wed","Thu","Fri","Sat","Sun"]
-                datasets: [
-                    {
-                        label: 'Snow (cm)',
-                        data: snowData,
-                        backgroundColor: 'rgba(0, 100, 255, 0.6)',
-                        borderColor: 'rgba(0, 100, 255, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'yLeft'
-                    },
-                    {
-                        label: 'Rain (mm)',
-                        data: rainData,
-                        backgroundColor: 'rgba(0, 200, 0, 0.5)',
-                        borderColor: 'rgba(0, 200, 0, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'yLeft'
-                    },
-                    {
-                        label: 'Freezing Level (m)',
-                        data: freezeData,
-                        type: 'line',
-                        borderColor: 'orange',
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        fill: false,
-                        yAxisID: 'yRight'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    yLeft: {
-                        type: 'linear',
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Snow (cm) / Rain (mm)'
-                        },
-                        grid: {
-                            drawOnChartArea: true
-                        }
-                    },
-                    yRight: {
-                        type: 'linear',
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Freezing Level (m)'
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
+        forecastChart?.destroy();
+        forecastChart = new Chart(ctx,{
+            type:'bar',
+            data:{
+                labels,
+                datasets:[
+                    {label:'Snow (cm)',  data:snow,   backgroundColor:'rgba(0,100,255,.6)', yAxisID:'yL'},
+                    {label:'Rain (mm)',  data:rain,   backgroundColor:'rgba(0,200,0,.5)',  yAxisID:'yL'},
+                    {label:'Freezing Level (m)', data:freeze, type:'line', borderColor:'orange',
+                        backgroundColor:'transparent', borderWidth:2, tension:.3, yAxisID:'yR'}
+                ]},
+            options:{
+                responsive:true,
+                plugins:{legend:{position:'bottom'}},
+                scales:{
+                    yL:{type:'linear',position:'left',title:{display:true,text:'Snow (cm) / Rain (mm)'}},
+                    yR:{type:'linear',position:'right',title:{display:true,text:'Freezing Level (m)'},
+                        grid:{drawOnChartArea:false}}
                 }
             }
         });
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        // 1) Snow Reports
-        fetch('/api/snow-reports')
-            .then(r => r.json())
-            .then(data => {
-                const container = document.getElementById('reports-container');
-                container.innerHTML = '';
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p>No snow reports available at this time.</p>';
-                } else {
-                    const ul = document.createElement('ul');
-                    data.forEach(report => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<strong>${report.reportText}</strong> <em>(${report.publishedText})</em><br><br/>`;
-                        ul.appendChild(li);
-                    });
-                    container.appendChild(ul);
-                }
-            })
-            .catch(err => {
-                console.error('Error fetching snow reports:', err);
-                document.getElementById('reports-container').innerHTML = '<p>Error loading reports.</p>';
-            });
+    /* ────────────────────────── draw temperature bubbles ──────────────────── */
 
-        // 2) Backcountry Info
-        fetch('/api/backcountry-info')
-            .then(r => r.json())
-            .then(data => {
-                const ratingImgEl = document.getElementById('avalanche-rating-img');
-                const backcountryContainer = document.getElementById('backcountry-container');
-                backcountryContainer.innerHTML = '';
-                if (!data) {
-                    backcountryContainer.innerHTML = '<p>No backcountry info available at this time.</p>';
-                    return;
-                }
-                if (data.ratingImg) {
-                    ratingImgEl.src = data.ratingImg;
-                    ratingImgEl.style.display = 'block';
-                }
-                if (Array.isArray(data.paragraphs) && data.paragraphs.length > 0) {
-                    data.paragraphs.forEach(paragraph => {
-                        const p = document.createElement('p');
-                        p.textContent = paragraph;
-                        backcountryContainer.appendChild(p);
-                    });
-                } else {
-                    backcountryContainer.innerHTML = '<p>No additional backcountry info found.</p>';
-                }
-            })
-            .catch(err => {
-                console.error('Error fetching backcountry info:', err);
-                document.getElementById('backcountry-container').innerHTML = '<p>Error loading backcountry info.</p>';
-            });
+    function drawTempChart(){
+        if(!forecastCache) return;                 // nothing to draw yet
 
-        // 3) Slideshow
-        async function startSlideshow() {
-            try {
-                const response = await fetch('/api/images');
-                const data = await response.json();
-                const images = data.images || [];
-                if (!images.length) {
-                    console.log('No images returned for slideshow.');
-                    return;
-                }
-                let currentIndex = 0;
-                const slideshowImage = document.getElementById('slideshow-image');
+        /* 1.  current UI selections */
+        const level = document.getElementById('temp-level').value; // base|mid|top
+        const time  = document.getElementById('temp-time').value;  // morning|afternoon|night
 
-                function showNextImage() {
-                    slideshowImage.src = images[currentIndex];
-                    currentIndex = (currentIndex + 1) % images.length;
-                }
+        /* 2.  build bubble dataset */
+        const pts = resorts.map((name,idx)=>{
+            const tempVal = +(forecastCache[name]?.forecast?.[0]?.[level]?.temperature?.[time] || 0);
+            return { x: tempVal, y: idx, r: 30,  resort: pretty(name) };
+        });
 
-                showNextImage();
-                setInterval(showNextImage, 1500);
-            } catch (err) {
-                console.error('Error fetching images for slideshow:', err);
-            }
-        }
-
-        startSlideshow();
-
-        // 4) Forecast Panels + All-Resort Chart Data
-        fetch('/api/forecast')
-            .then(r => r.json())
-            .then(data => {
-                const forecastSections = document.getElementById('forecast-sections');
-                forecastSections.innerHTML = '';
-
-                // We'll create day labels for the next 7 days (common to all resorts)
-                const now = new Date();
-                const pstNow = new Date(now.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
-                const dynamicDayLabels = [];
-                for (let i = 0; i < 7; i++) {
-                    const d = new Date(pstNow);
-                    d.setDate(pstNow.getDate() + i);
-                    if (i === 0) {
-                        dynamicDayLabels.push("Today");
-                    } else if (i === 1) {
-                        dynamicDayLabels.push("Tomorrow");
-                    } else {
-                        dynamicDayLabels.push(d.toLocaleDateString('en-US', {weekday: 'long'}));
-                    }
-                }
-
-                // We'll handle 3 resorts
-                const resortOrder = ["Cypress-Mountain", "Grouse-Mountain", "Mount-Seymour"];
-                resortOrder.forEach(resortName => {
-                    const resortData = data.forecast[resortName];
-                    if (!resortData) return;
-
-                    // Prepare arrays for the chart
-                    resortChartData[resortName].dayLabels = [];
-                    resortChartData[resortName].snowData = [];
-                    resortChartData[resortName].rainData = [];
-                    resortChartData[resortName].freezeData = [];
-
-                    // Create a section for the forecast panels
-                    const resortSection = document.createElement('div');
-                    resortSection.className = 'resort-forecast-section';
-                    const header = document.createElement('h2');
-                    const resortLink = document.createElement('a');
-                    resortLink.href = 'https://skibc.tech/';
-                    resortLink.textContent = resortName + " Forecast";
-                    resortLink.style.color = "#ADD8E6";
-                    header.appendChild(resortLink);
-                    resortSection.appendChild(header);
-
-                    const forecastRow = document.createElement('div');
-                    forecastRow.className = 'forecast-row';
-
-                    // Each day => build a panel
-                    resortData.forecast.forEach((dayData, idx) => {
-                        const panel = document.createElement('div');
-                        panel.className = 'forecast-panel';
-
-                        // day label
-                        const dayHeader = document.createElement('h3');
-                        dayHeader.textContent = dynamicDayLabels[idx] || "";
-                        panel.appendChild(dayHeader);
-
-                        // base/mid/top select
-                        const select = document.createElement('select');
-                        select.className = 'level-select';
-                        select.innerHTML = `
-              <option value="base">Base</option>
-              <option value="mid">Mid</option>
-              <option value="top">Top</option>
-            `;
-                        panel.appendChild(select);
-
-                        // detail area
-                        const detailsDiv = document.createElement('div');
-                        detailsDiv.className = 'forecast-details';
-                        panel.appendChild(detailsDiv);
-
-                        function updateDetails() {
-                            const level = select.value;
-                            detailsDiv.innerHTML = '';
-                            const attributes = dayData[level];
-                            for (const key in attributes) {
-                                const p = document.createElement('p');
-                                p.innerHTML = formatAttribute(key, attributes[key]);
-                                detailsDiv.appendChild(p);
-                            }
+        /* 3.  (re)draw */
+        tempChart?.destroy();
+        tempChart = new Chart(document.getElementById('tempChart'),{
+            type:'bubble',
+            data:{ datasets:[{
+                    data:pts,
+                    backgroundColor:pts.map(p=>
+                        p.x<=0 ? 'rgba(135,206,235,.85)' :
+                            p.x<=5 ? 'rgba(210,105,30,.85)'  :
+                                'rgba(205,92,92,.85)'),
+                    borderColor:'#333',borderWidth:1
+                }]},
+            options:{
+                responsive:true,aspectRatio:1.8,
+                scales : {
+                    x : {
+                        title : { display:true, text:'Temperature (°C)' },
+                        min   : -6,
+                        max   : 18,
+                        grid  : {
+                            color     : 'rgba(0,0,0,0.10)',   // light grey lines
+                            lineWidth : 1,
+                            borderDash: [3,3]                 // dashed for “graph-paper” look
                         }
+                    },
+                    y : {
+                        type  : 'category',
+                        labels: resorts.map(pretty),
+                        grid  : {
+                            color     : 'rgba(0,0,0,0.10)',
+                            lineWidth : 1,
+                            borderDash: [3,3]
+                        }
+                    }
+                },
 
-                        select.addEventListener('change', updateDetails);
-                        updateDetails();
+                plugins : {
+                    datalabels : {                      // show temp inside bubble
+                        color:'#000',font:{weight:'600',size:14},
+                        formatter:v=>`${v.x}°`
+                    },
+                    legend : { display:false },
+                    tooltip: { callbacks:{
+                            label:c=>`${c.raw.resort}: ${c.raw.x.toFixed(1)} °C`
+                        }},
+                    annotation:{ annotations:{
+                            freezing:{ type:'line', xMin:0,xMax:0,
+                                borderColor:'red', borderWidth:2 }
+                        }}
+                }
+            },
+            plugins:[bubbleLabel]   // <<--- label plugin activated
+        });
+    }
 
-                        forecastRow.appendChild(panel);
+    /* ───────────────────────── DOM-ready main routine ─────────────────────── */
+    document.addEventListener('DOMContentLoaded',()=>{
 
-                        // ============ Fill Chart Data for This Resort's base-level =============
-                        resortChartData[resortName].dayLabels.push(dynamicDayLabels[idx]);
+        /* ---------------- snow-reports panel ---------------- */
+        fetch('/api/snow-reports')
+            .then(r=>r.json())
+            .then(arr=>{
+                const el=document.getElementById('reports-container');
+                if(!arr?.length){el.innerHTML='<p>No snow reports available.</p>';return;}
+                el.innerHTML='<ul>'+arr.map(r=>`<li><strong>${r.reportText}</strong> <em>(${r.publishedText})</em><br><br></li>`).join('')+'</ul>';
+            })
+            .catch(e=>{console.error(e);document.getElementById('reports-container').textContent='Error loading reports.';});
 
-                        const baseObj = dayData.base;
-                        const snowVal = parseFloat(baseObj?.snow ?? 0) || 0;
-                        const rainVal = parseFloat(baseObj?.rain ?? 0) || 0;
-                        const freezeVal = parseFloat(baseObj?.freezinglevel ?? 0) || 0;
-                        resortChartData[resortName].snowData.push(snowVal);
-                        resortChartData[resortName].rainData.push(rainVal);
-                        resortChartData[resortName].freezeData.push(freezeVal);
+        /* ---------------- back-country panel ---------------- */
+        fetch('/api/backcountry-info')
+            .then(r=>r.json())
+            .then(d=>{
+                const img=document.getElementById('avalanche-rating-img');
+                const box=document.getElementById('backcountry-container');
+                if(!d){box.textContent='No backcountry info.';return;}
+                if(d.ratingImg){img.src=d.ratingImg;img.style.display='block';}
+                box.innerHTML=(d.paragraphs||[]).map(p=>`<p>${p}</p>`).join('')||'No additional info.';
+            })
+            .catch(e=>{console.error(e);document.getElementById('backcountry-container').textContent='Error loading backcountry info.';});
+
+        /* ---------------- slideshow ---------------- */
+        fetch('/api/images')
+            .then(r=>r.json())
+            .then(({images=[]})=>{
+                if(!images.length) return;
+                const img=document.getElementById('slideshow-image');
+                let i=0; const next=()=>{img.src=images[i];i=(i+1)%images.length;};
+                next(); setInterval(next,1500);
+            })
+            .catch(console.error);
+
+        /* ---------------- forecast panels + charts ---------------- */
+        fetch('/api/forecast')
+            .then(r=>r.json())
+            .then(({forecast})=>{
+                forecastCache=forecast;
+
+                /* weekday labels */
+                const tz='America/Los_Angeles';
+                const today=new Date(new Date().toLocaleString('en-US',{timeZone:tz}));
+                const wk=[...Array(7)].map((_,i)=>{
+                    const d=new Date(today);d.setDate(today.getDate()+i);
+                    return i===0?'Today':i===1?'Tomorrow':
+                        d.toLocaleDateString('en-US',{weekday:'long'});
+                });
+
+                const wrap=document.getElementById('forecast-sections'); wrap.innerHTML='';
+                resorts.forEach(res=>{
+                    const fc=forecast[res]; if(!fc) return;
+
+                    /* reset arrays */
+                    Object.assign(resortChartData[res],{labels:[],snow:[],rain:[],freeze:[]});
+
+                    /* section skeleton */
+                    const sec=document.createElement('div'); sec.className='resort-forecast-section';
+                    sec.innerHTML=`<h2><a href="https://skibc.tech/" style="color:#ADD8E6">${res} Forecast</a></h2>`;
+                    const row=document.createElement('div'); row.className='forecast-row'; sec.appendChild(row);
+
+                    fc.forecast.forEach((day,idx)=>{
+                        /* mini-panel */
+                        const pane=document.createElement('div'); pane.className='forecast-panel';
+                        pane.innerHTML=`<h3>${wk[idx]}</h3>`;
+                        const sel=document.createElement('select');
+                        sel.className='level-select';
+                        sel.innerHTML='<option value="base">Base</option><option value="mid">Mid</option><option value="top">Top</option>';
+                        const det=document.createElement('div'); det.className='forecast-details';
+                        pane.appendChild(sel); pane.appendChild(det);
+                        const fill=()=>{det.innerHTML='';Object.entries(day[sel.value])
+                            .forEach(([k,v])=>{const p=document.createElement('p');
+                                p.innerHTML=formatAttribute(k,v);det.appendChild(p);});};
+                        sel.addEventListener('change',fill); fill(); row.appendChild(pane);
+
+                        /* base-level numbers for main chart */
+                        const b=day.base;
+                        resortChartData[res].labels .push(wk[idx]);
+                        resortChartData[res].snow   .push(+b?.snow||0);
+                        resortChartData[res].rain   .push(+b?.rain||0);
+                        resortChartData[res].freeze .push(highest(b?.freezinglevel));
                     });
 
-                    resortSection.appendChild(forecastRow);
-                    forecastSections.appendChild(resortSection);
+                    wrap.appendChild(sec);
                 });
 
-                // Default chart => show Cypress
-                renderChartForResort("Cypress-Mountain");
-
-                // Add event listener for #resort-dropdown
-                const dropdown = document.getElementById('resort-dropdown');
-                dropdown.addEventListener('change', () => {
-                    const chosenResort = dropdown.value;
-                    renderChartForResort(chosenResort);
-                });
+                /* initial chart renders + UI listeners */
+                drawForecastChart('Cypress-Mountain');
+                drawTempChart();
+                document.getElementById('resort-dropdown')
+                    .addEventListener('change',e=>drawForecastChart(e.target.value));
+                document.getElementById('temp-level')
+                    .addEventListener('change',drawTempChart);
+                document.getElementById('temp-time')
+                    .addEventListener('change',drawTempChart);
             })
-            .catch(err => {
-                console.error("Error fetching forecast data:", err);
-                document.getElementById("forecast-sections").innerHTML = "<p>Error loading forecast data.</p>";
+            .catch(e=>{
+                console.error(e);
+                document.getElementById('forecast-sections').textContent='Error loading forecast.';
             });
     });
 </script>
-
-
 </body>
 </html>
 
