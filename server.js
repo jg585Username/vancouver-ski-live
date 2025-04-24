@@ -669,6 +669,10 @@ app.get('/api/images', async (req, res) => {
     res.status(500).json({ error: 'Failed to scrape images' });
   }
 });
+// server.js
+app.get('/api/cypress-bike',  async (_,res)=>res.json(await scrapeCypressBike()));
+app.get('/api/grouse-bike',   async (_,res)=>res.json(await scrapeGrouseBike()));
+app.get('/api/seymour-bike',  async (_,res)=>res.json(await scrapeSeymourBike()));
 
 app.use('/api', appRoutes);
 

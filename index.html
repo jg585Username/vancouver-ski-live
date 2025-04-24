@@ -383,6 +383,23 @@
                 min-width: 600px;
             }
         }
+        /* Bike-trail cards — visually cloned from .lift-box */
+        .trail-container{
+            display:flex; flex-wrap:wrap; justify-content:center; gap:1rem;
+        }
+        .trail-box{
+            background:#f6f8fa; color:#333;
+            border-radius:8px; width:220px; padding:1rem;
+            box-shadow:0 0 8px rgba(0,0,0,.12);
+            transition:transform .25s, box-shadow .25s;
+        }
+        .trail-box:hover{ transform:translateY(-4px); box-shadow:0 6px 10px rgba(0,0,0,.25); }
+        .trail-box h3{ margin:0 0 .5rem; font-size:1.05rem; text-align:center; }
+        .trail-status{ font-size:1.15rem; text-align:center; }
+        .trail-status.open   { color:green;  }
+        .trail-status.closed { color:#d33;   }
+        .trail-status.partial{ color:#e6b800;}
+
     </style>
 </head>
 <body>
@@ -457,6 +474,27 @@
         </div>
     </div>
     <!-- =============== END WEBCAMS PANEL =============== -->
+    <!-- BIKE-TRAILS PANEL  (insert right below the webcam panel) -->
+    <div class="translucent-panel" id="bike-panel">
+        <h1>Bike Trail Status</h1>
+        <p class="subtitle">– Click a mountain logo to toggle its trails –</p>
+
+        <!-- logos to click -->
+        <div class="logo-gallery" id="bikeLogoGallery">
+            <div class="logo-container" id="bikeCypressLogo">
+                <img src="images/cypress_logo.svg"  alt="Cypress Bike"/>
+            </div>
+            <div class="logo-container" id="bikeGrouseLogo">
+                <img src="images/grouse_logo.svg"   alt="Grouse Bike"/>
+            </div>
+            <div class="logo-container" id="bikeSeymourLogo">
+                <img src="images/seymour_logo.svg"  alt="Seymour Bike"/>
+            </div>
+        </div>
+
+        <!-- where we inject the trail boxes -->
+        <div class="trail-container" id="trailContainer"></div>
+    </div>
 
     <!-- Updated Operational Updates Panel -->
     <div class="translucent-panel">
@@ -469,6 +507,62 @@
     </div>
 
     <script>
+        /*****  BIKE-TRAIL LOGIC  *****/
+        const trailContainer = document.getElementById('trailContainer');
+        let activeBikeResort = null;
+
+        function difficultyEmoji(code){
+            switch(code?.toLowerCase()){
+                case 'green':   return '🟢';
+                case 'blue':    return '🔵';
+                case 'black':   return '⚫️';
+                case 'dblblack':return '⚫️⚫️';
+                default:        return '';
+            }
+        }
+
+        function displayBikeTrails(trails, resort){
+            // toggle logic
+            if(activeBikeResort === resort && trailContainer.innerHTML.trim()){
+                trailContainer.innerHTML = '';   activeBikeResort = null;  return;
+            }
+            activeBikeResort = resort;  trailContainer.innerHTML = '';
+
+            trails.forEach(t=>{
+                const box = document.createElement('div');  box.className='trail-box';
+
+                box.innerHTML = `
+      <h3>${difficultyEmoji(t.difficulty)} ${t.name}</h3>
+      <div class="trail-status ${t.status.toLowerCase().replace(' ','')}">
+          ${t.status}
+      </div>`;
+                trailContainer.appendChild(box);
+            });
+        }
+
+        /* per-mountain fetchers – adjust endpoint names if different */
+        async function getBike(url, resort){
+            trailContainer.innerHTML = '<p>Loading trails …</p>';
+            try{
+                const r = await fetch(url);
+                if(!r.ok) throw new Error('bad response');
+                const data = await r.json();
+                displayBikeTrails(data.trails || [], resort);
+            }catch(e){
+                console.error(e);
+                trailContainer.innerHTML = `<p class="trail-status closed">
+        Failed to load ${resort} trails.</p>`;
+            }
+        }
+
+        /* click hooks */
+        document.getElementById('bikeCypressLogo')
+            .addEventListener('click',()=>getBike('/api/cypress-bike','cypress'));
+        document.getElementById('bikeGrouseLogo')
+            .addEventListener('click',()=>getBike('/api/grouse-bike','grouse'));
+        document.getElementById('bikeSeymourLogo')
+            .addEventListener('click',()=>getBike('/api/seymour-bike','seymour'));
+
         // Array holding each mountain's name and API endpoint.
         const mountains = [
             { name: 'Cypress', endpoint: '/api/cypress-updates' },
