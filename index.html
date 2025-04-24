@@ -542,6 +542,16 @@
 
         /* per-mountain fetchers – adjust endpoint names if different */
         async function getBike(url, resort){
+            if (resort === 'grouse') {
+                trailContainer.innerHTML = `
+        <p style="text-align:center; color:#fff;">
+          <strong>Grouse Mountain Bike Park</strong><br>
+          opening this summer.<br>
+          <em>Coming soon…</em>
+        </p>`;
+                activeBikeResort = resort;
+                return;
+            }
             trailContainer.innerHTML = '<p>Loading trails …</p>';
             try{
                 const r = await fetch(url);

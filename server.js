@@ -418,6 +418,74 @@ export async function scrapeSeymourBike () {
   }
 }
 
+export async function scrapeCypressBike () {
+  const url =
+      'https://www.trailforks.com/region/cypress-mountain/status/' +
+      '?viewMode=table&activitytype=1';          // “1” = mountain-bike
+
+  try {
+    /* 1 ─ fetch like a real Chromium tab                              */
+    const { data: html } = await axios.get(url, {
+      headers : {
+        'User-Agent'      :
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+            'AppleWebKit/537.36 (KHTML, like Gecko) '     +
+            'Chrome/124.0 Safari/537.36',
+        'Accept'          :
+            'text/html,application/xhtml+xml,application/xml;q=0.9,' +
+            'image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language' : 'en-US,en;q=0.9',
+        'Referer'         : 'https://www.trailforks.com/',
+        'Sec-Fetch-Dest'  : 'document',
+        'Sec-Fetch-Mode'  : 'navigate',
+        'Sec-Fetch-Site'  : 'same-origin',
+        'Sec-Fetch-User'  : '?1',
+        'Cache-Control'   : 'no-cache',
+        Pragma            : 'no-cache'
+      },
+      timeout : 15_000
+    });
+
+    /* 2 ─ turn Trailforks’ table into a neat JS array                  */
+    const $      = cheerio.load(html);
+    const trails = [];
+
+    $('.statustable tbody tr').each((_, row) => {
+      const $row = $(row);
+
+      const name      = $row.find('td:nth-child(2) a')
+          .first().text().trim();
+      const status    = $row.find('td:nth-child(3) span.sicon_small')
+          .attr('title')?.trim() || 'unknown';
+      const condition = $row.find('td:nth-child(4) span.sicon_small')
+          .attr('title')?.trim() || 'unknown';
+      const date      = $row.find('td:nth-child(5) .fullTime')
+              .attr('title')?.trim() ||
+          $row.find('td:nth-child(5)').text().trim();
+
+      // Map TF colour → difficulty string (optional)
+      const difficulty = (() => {
+        const cls =
+            $row.find('td:nth-child(2) span[class*="trailcolor"]')
+                .attr('class') || '';
+        if      (cls.includes('green'))  return 'green';
+        else if (cls.includes('blue'))   return 'blue';
+        else if (cls.includes('black2')) return 'dblblack';
+        else if (cls.includes('black'))  return 'black';
+        return 'unknown';
+      })();
+
+      trails.push({ name, status, condition, date, difficulty });
+    });
+
+    return trails;               // <-- WHAT YOUR FRONT-END EXPECTS
+  }
+  catch (err) {
+    console.error('[scrapeCypressBike] FAILED:', err.message);
+    return [];                   // fail-soft
+  }
+}
+
 
 
 
@@ -745,7 +813,18 @@ app.get('/api/images', async (req, res) => {
   }
 });
 // server.js
-app.get('/api/cypress-bike',  async (_,res)=>res.json(await scrapeCypressBike()));
+app.get('/api/cypress-bike', async (_req, res) => {
+  try {
+    const trails = await scrapeCypressBike();
+    return res.json({ trails });         // { trails:[…] }
+  } catch (err) {
+    console.error('[cypress-bike] scrape failed:', err);
+    return res.status(502).json({
+      error : 'scrape_failed',
+      message : err.message
+    });
+  }
+});
 app.get('/api/grouse-bike',   async (_,res)=>res.json(await scrapeGrouseBike()));
 app.get('/api/seymour-bike-status', async (_, res) => {
   const result = await scrapeSeymourBike();   // { ok, trails, error? }
