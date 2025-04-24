@@ -345,6 +345,81 @@ async function scrapeSeymourAll() {
   });
   return merged;
 }
+export async function scrapeSeymourBike () {
+  const url =
+      'https://www.trailforks.com/region/mount-seymour/status/' +
+      '?viewMode=table&activitytype=1';
+
+  try {
+    /* -------------------------------------------------- *
+     * 1) GET the page -- spoof *everything* a browser sends
+     * -------------------------------------------------- */
+    const { data: html } = await axios.get(url, {
+      headers : {
+        // basic browser stuff
+        'User-Agent'      :
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+            'AppleWebKit/537.36 (KHTML, like Gecko) '     +
+            'Chrome/124.0 Safari/537.36',
+        'Accept'          :
+            'text/html,application/xhtml+xml,application/xml;q=0.9,' +
+            'image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language' : 'en-US,en;q=0.9',
+        // Cloudflare checks these:
+        'Referer'         : 'https://www.trailforks.com/',
+        'Sec-Fetch-Dest'  : 'document',
+        'Sec-Fetch-Mode'  : 'navigate',
+        'Sec-Fetch-Site'  : 'same-origin',
+        'Sec-Fetch-User'  : '?1',
+        // don’t reuse caches
+        'Cache-Control'   : 'no-cache',
+        Pragma            : 'no-cache'
+      },
+      timeout : 15_000
+    });
+
+    /* -------------------------------------------------- *
+     * 2) Parse the “statustable” into a clean array
+     * -------------------------------------------------- */
+    const $      = cheerio.load(html);
+    const trails = [];
+
+    $('.statustable tbody tr').each((_, row) => {
+      const $row = $(row);
+
+      const name      = $row.find('td:nth-child(2) a').first().text().trim();
+      const status    = $row.find('td:nth-child(3) span.sicon_small')
+          .attr('title')?.trim() || 'unknown';
+      const condition = $row.find('td:nth-child(4) span.sicon_small')
+          .attr('title')?.trim() || 'unknown';
+      const date      = $row.find('td:nth-child(5) .fullTime')
+              .attr('title')?.trim() ||
+          $row.find('td:nth-child(5)').text().trim();
+
+      // optional: map TF’s colour → easier difficulty string
+      const difficulty = (() => {
+        const cls = $row.find('td:nth-child(2) span[class*="trailcolor"]')
+            .attr('class') || '';
+        if      (cls.includes('green'))  return 'green';
+        else if (cls.includes('blue'))   return 'blue';
+        else if (cls.includes('black2')) return 'dblblack';
+        else if (cls.includes('black'))  return 'black';
+        return 'unknown';
+      })();
+
+      trails.push({ name, status, condition, date, difficulty });
+    });
+
+    return { ok : true, trails };
+
+  } catch (err) {
+    console.error('[scrapeSeymourBike] FAILED:', err.message);
+    return { ok : false, error : err.message };
+  }
+}
+
+
+
 
 // 7) OnTheSnow Weather (Existing)
 async function getWeather() {
@@ -672,7 +747,11 @@ app.get('/api/images', async (req, res) => {
 // server.js
 app.get('/api/cypress-bike',  async (_,res)=>res.json(await scrapeCypressBike()));
 app.get('/api/grouse-bike',   async (_,res)=>res.json(await scrapeGrouseBike()));
-app.get('/api/seymour-bike',  async (_,res)=>res.json(await scrapeSeymourBike()));
+app.get('/api/seymour-bike-status', async (_, res) => {
+  const result = await scrapeSeymourBike();   // { ok, trails, error? }
+  res.json(result);
+});
+
 
 app.use('/api', appRoutes);
 
