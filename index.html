@@ -400,6 +400,73 @@
         .trail-status.closed { color:#d33;   }
         .trail-status.partial{ color:#e6b800;}
 
+        /* ================ TAB NAVIGATION ================ */
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .tab-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            border-bottom: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-bottom: 3px solid #4CAF50;
+            color: #4CAF50;
+        }
+        .tab-button img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            padding: 3px;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading-spinner {
+            text-align: center;
+            padding: 2rem;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        .loading-spinner::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
     </style>
 </head>
 <body>
@@ -474,26 +541,37 @@
         </div>
     </div>
     <!-- =============== END WEBCAMS PANEL =============== -->
-    <!-- BIKE-TRAILS PANEL  (insert right below the webcam panel) -->
+    <!-- BIKE-TRAILS PANEL WITH TABS -->
     <div class="translucent-panel" id="bike-panel">
-        <h1>Bike Trail Status (Click Me)</h1>
-        <p class="subtitle">– Click a mountain logo to toggle its trails –</p>
+        <h1>Mountain Bike Trail Status</h1>
+        <p class="subtitle">View real-time trail conditions and status</p>
 
-        <!-- logos to click -->
-        <div class="logo-gallery" id="bikeLogoGallery">
-            <div class="logo-container" id="bikeCypressLogo">
-                <img src="images/cypress_logo.svg"  alt="Cypress Bike"/>
-            </div>
-            <div class="logo-container" id="bikeGrouseLogo">
-                <img src="images/grouse_logo.svg"   alt="Grouse Bike"/>
-            </div>
-            <div class="logo-container" id="bikeSeymourLogo">
-                <img src="images/seymour_logo.svg"  alt="Seymour Bike"/>
-            </div>
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-button bike-tab active" data-mountain="cypress">
+                <img src="images/cypress_logo.svg" alt="Cypress"/>
+                Cypress
+            </button>
+            <button class="tab-button bike-tab" data-mountain="grouse">
+                <img src="images/grouse_logo.svg" alt="Grouse"/>
+                Grouse
+            </button>
+            <button class="tab-button bike-tab" data-mountain="seymour">
+                <img src="images/seymour_logo.svg" alt="Seymour"/>
+                Seymour
+            </button>
         </div>
 
-        <!-- where we inject the trail boxes -->
-        <div class="trail-container" id="trailContainer"></div>
+        <!-- Tab Content Areas -->
+        <div id="bike-cypress" class="tab-content active">
+            <div class="loading-spinner">Loading Cypress bike trails</div>
+        </div>
+        <div id="bike-grouse" class="tab-content">
+            <div class="loading-spinner">Loading Grouse bike trails</div>
+        </div>
+        <div id="bike-seymour" class="tab-content">
+            <div class="loading-spinner">Loading Seymour bike trails</div>
+        </div>
     </div>
 
     <!-- Updated Operational Updates Panel -->
@@ -507,9 +585,12 @@
     </div>
 
     <script>
-        /*****  BIKE-TRAIL LOGIC  *****/
-        const trailContainer = document.getElementById('trailContainer');
-        let activeBikeResort = null;
+        /*****  BIKE-TRAIL LOGIC WITH TABS  *****/
+        const bikeDataCache = {
+            cypress: null,
+            grouse: null,
+            seymour: null
+        };
 
         function difficultyEmoji(code){
             switch(code?.toLowerCase()){
@@ -522,56 +603,96 @@
         }
 
         function displayBikeTrails(trails, resort){
-            // toggle logic
-            if(activeBikeResort === resort && trailContainer.innerHTML.trim()){
-                trailContainer.innerHTML = '';   activeBikeResort = null;  return;
-            }
-            activeBikeResort = resort;  trailContainer.innerHTML = '';
+            const container = document.getElementById(`bike-${resort}`);
 
-            trails.forEach(t=>{
-                const box = document.createElement('div');  box.className='trail-box';
-
-                box.innerHTML = `
-      <h3>${difficultyEmoji(t.difficulty)} ${t.name}</h3>
-      <div class="trail-status ${t.status.toLowerCase().replace(' ','')}">
-          ${t.status}
-      </div>`;
-                trailContainer.appendChild(box);
-            });
-        }
-
-        /* per-mountain fetchers – adjust endpoint names if different */
-        async function getBike(url, resort){
             if (resort === 'grouse') {
-                trailContainer.innerHTML = `
-        <p style="text-align:center; color:#fff;">
-          <strong>Grouse Mountain Bike Park</strong><br>
-          opening this summer.<br>
-          <em>Coming soon…</em>
-        </p>`;
-                activeBikeResort = resort;
+                container.innerHTML = `
+                    <p style="text-align:center; color:#fff; padding: 2rem;">
+                        <strong>Grouse Mountain Bike Park</strong><br>
+                        opening this summer.<br>
+                        <em>Coming soon…</em>
+                    </p>`;
                 return;
             }
-            trailContainer.innerHTML = '<p>Loading trails …</p>';
-            try{
-                const r = await fetch(url);
-                if(!r.ok) throw new Error('bad response');
-                const data = await r.json();
-                displayBikeTrails(data.trails || [], resort);
-            }catch(e){
-                console.error(e);
-                trailContainer.innerHTML = `<p class="trail-status closed">
-        Failed to load ${resort} trails.</p>`;
+
+            if (!trails || trails.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#fff;">No trail data available</p>`;
+                return;
+            }
+
+            const trailContainer = document.createElement('div');
+            trailContainer.className = 'trail-container';
+
+            trails.forEach(t=>{
+                const box = document.createElement('div');
+                box.className='trail-box';
+                box.innerHTML = `
+                    <h3>${difficultyEmoji(t.difficulty)} ${t.name}</h3>
+                    <div class="trail-status ${t.status.toLowerCase().replace(/\s/g,'')}">
+                        ${t.status}
+                    </div>`;
+                trailContainer.appendChild(box);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(trailContainer);
+        }
+
+        async function loadBikeTrails(resort) {
+            // Return cached data if available
+            if (bikeDataCache[resort]) {
+                displayBikeTrails(bikeDataCache[resort], resort);
+                return;
+            }
+
+            const container = document.getElementById(`bike-${resort}`);
+            const endpoints = {
+                cypress: '/api/cypress-bike',
+                grouse: '/api/grouse-bike',
+                seymour: '/api/seymour-bike-status'
+            };
+
+            if (resort === 'grouse') {
+                displayBikeTrails([], resort);
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoints[resort]);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                bikeDataCache[resort] = data.trails || [];
+                displayBikeTrails(bikeDataCache[resort], resort);
+            } catch(e) {
+                console.error(`Error loading ${resort} bike trails:`, e);
+                container.innerHTML = `<p style="text-align:center; color:#ff6b6b;">
+                    Failed to load ${resort} bike trails. Please try again later.
+                </p>`;
             }
         }
 
-        /* click hooks */
-        document.getElementById('bikeCypressLogo')
-            .addEventListener('click',()=>getBike('/api/cypress-bike','cypress'));
-        document.getElementById('bikeGrouseLogo')
-            .addEventListener('click',()=>getBike('/api/grouse-bike','grouse'));
-        document.getElementById('bikeSeymourLogo')
-            .addEventListener('click',()=>getBike('/api/seymour-bike-status','seymour'));
+        // Bike tab switching
+        document.querySelectorAll('.bike-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const mountain = this.dataset.mountain;
+
+                // Update active tab
+                document.querySelectorAll('.bike-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // Update active content
+                document.querySelectorAll('[id^="bike-"]').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`bike-${mountain}`).classList.add('active');
+
+                // Load data if not already loaded
+                loadBikeTrails(mountain);
+            });
+        });
+
+        // Load first tab on page load
+        loadBikeTrails('cypress');
 
         // Array holding each mountain's name and API endpoint.
         const mountains = [
@@ -621,26 +742,39 @@
         loadUpdate(currentIndex);
     </script>
 
-    <!-- Lifts Panel -->
+    <!-- Lifts Panel WITH TABS -->
     <div class="translucent-panel">
-        <h1>Ski Run/Lift Status (CLICK ME)</h1>
+        <h1>Ski Lift & Run Status</h1>
         <p class="subtitle">
-            - Click logos to see lift and individual run status -
+            Real-time lift operations and run conditions - Click runs for detailed status
         </p>
-        <div class="logo-gallery">
-            <!-- Containers for each mountain logo -->
-            <div class="logo-container" id="cypressLogoContainer">
-                <img src="images/cypress_logo.svg" alt="Cypress Mountain"/>
-            </div>
-            <div class="logo-container" id="grouseLogoContainer">
-                <img src="images/grouse_logo.svg" alt="Grouse Mountain"/>
-            </div>
-            <div class="logo-container" id="seymourLogoContainer">
-                <img src="images/seymour_logo.svg" alt="Seymour Mountain"/>
-            </div>
-            <hr width="100%" size="2">
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <button class="tab-button lift-tab active" data-mountain="cypress">
+                <img src="images/cypress_logo.svg" alt="Cypress"/>
+                Cypress
+            </button>
+            <button class="tab-button lift-tab" data-mountain="grouse">
+                <img src="images/grouse_logo.svg" alt="Grouse"/>
+                Grouse
+            </button>
+            <button class="tab-button lift-tab" data-mountain="seymour">
+                <img src="images/seymour_logo.svg" alt="Seymour"/>
+                Seymour
+            </button>
         </div>
-        <div class="lift-container" id="liftContainer"></div>
+
+        <!-- Tab Content Areas -->
+        <div id="lift-cypress" class="tab-content active">
+            <div class="loading-spinner">Loading Cypress lifts</div>
+        </div>
+        <div id="lift-grouse" class="tab-content">
+            <div class="loading-spinner">Loading Grouse lifts</div>
+        </div>
+        <div id="lift-seymour" class="tab-content">
+            <div class="loading-spinner">Loading Seymour lifts</div>
+        </div>
     </div>
 
     <!-- Weather & Snow Panel -->
@@ -763,23 +897,25 @@
     overlay.addEventListener('click', hideRunsModal); // click outside to close
 
     /***********************************************
-     * LIFT LOGIC
+     * LIFT LOGIC WITH TABS
      ***********************************************/
-    const liftContainer = document.getElementById('liftContainer');
-    let activeResort = null;
+    const liftDataCache = {
+        cypress: null,
+        grouse: null,
+        seymour: null
+    };
+
     function displayLifts(lifts, resortName) {
-        if (activeResort === resortName) {
-            if (liftContainer.innerHTML.trim().length > 0) {
-                liftContainer.innerHTML = '';
-                activeResort = null;  // No active resort now
-                return;
-            }
-        } else {
-            liftContainer.innerHTML = '';
-            activeResort = resortName;  // Update which resort is now active
+        const container = document.getElementById(`lift-${resortName}`);
+        const liftContainer = document.createElement('div');
+        liftContainer.className = 'lift-container';
+
+        if (!lifts || lifts.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#fff;">No lift data available</p>`;
+            return;
         }
 
-        // Now, build the DOM elements for each lift
+        // Build the DOM elements for each lift
         lifts.forEach(lift => {
             const liftBox = document.createElement('div');
             liftBox.classList.add('lift-box');
@@ -866,49 +1002,62 @@
 
             liftContainer.appendChild(liftBox);
         });
+
+        container.innerHTML = '';
+        container.appendChild(liftContainer);
     }
 
     // ========== Fetch endpoints for each mountain ==========
-    async function fetchCypress() {
-        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
-        try {
-            const response = await fetch('/api/cypress-lifts');
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
-            displayLifts(data.lifts, 'cypress');
-        } catch (error) {
-            liftContainer.innerHTML = `<p class="status closed">Error loading Cypress lift statuses.</p>`;
-            console.error('Fetch Cypress Error:', error);
+    async function loadLiftData(resort) {
+        // Return cached data if available
+        if (liftDataCache[resort]) {
+            displayLifts(liftDataCache[resort], resort);
+            return;
         }
-    }
-    async function fetchGrouse() {
-        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
+
+        const container = document.getElementById(`lift-${resort}`);
+        const endpoints = {
+            cypress: '/api/cypress-lifts',
+            grouse: '/api/grouse-lifts',
+            seymour: '/api/seymour-lifts'
+        };
+
         try {
-            const response = await fetch('/api/grouse-lifts');
+            const response = await fetch(endpoints[resort]);
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            displayLifts(data.lifts, 'grouse');
+            liftDataCache[resort] = data.lifts || [];
+            displayLifts(liftDataCache[resort], resort);
         } catch (error) {
-            liftContainer.innerHTML = `<p class="status closed">Error loading Grouse lift statuses.</p>`;
-            console.error('Fetch Grouse Error:', error);
-        }
-    }
-    async function fetchSeymour() {
-        liftContainer.innerHTML = `<p style="text-align:center; width:100%; color:#fff;">Loading lifts...</p>`;
-        try {
-            const response = await fetch('/api/seymour-lifts');
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
-            displayLifts(data.lifts, 'seymour');
-        } catch (error) {
-            liftContainer.innerHTML = `<p class="status closed">Error loading Seymour lift statuses.</p>`;
-            console.error('Fetch Seymour Error:', error);
+            console.error(`Error loading ${resort} lifts:`, error);
+            container.innerHTML = `<p style="text-align:center; color:#ff6b6b;">
+                Error loading ${resort} lift statuses. Please try again later.
+            </p>`;
         }
     }
 
-    document.getElementById('cypressLogoContainer').addEventListener('click', fetchCypress);
-    document.getElementById('grouseLogoContainer').addEventListener('click', fetchGrouse);
-    document.getElementById('seymourLogoContainer').addEventListener('click', fetchSeymour);
+    // Lift tab switching
+    document.querySelectorAll('.lift-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const mountain = this.dataset.mountain;
+
+            // Update active tab
+            document.querySelectorAll('.lift-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            // Update active content
+            document.querySelectorAll('[id^="lift-"]').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`lift-${mountain}`).classList.add('active');
+
+            // Load data if not already loaded
+            loadLiftData(mountain);
+        });
+    });
+
+    // Load first tab on page load
+    loadLiftData('cypress');
 
     /***********************************************
      * WEATHER LOGIC
