@@ -4,7 +4,8 @@
       "Bash(npm run dev:*)",
       "Bash(cat:*)",
       "Bash(where:*)",
-      "Bash(cmd.exe /c \"where node\")"
+      "Bash(cmd.exe /c \"where node\")",
+      "WebFetch(domain:whistlerpeak.com)"
     ],
     "deny": [],
     "ask": []
