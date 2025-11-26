@@ -957,6 +957,165 @@ app.get('/api/seymour-bike-status', async (_, res) => {
   res.json(result);
 });
 
+// Weather/conditions endpoint aggregating data from all mountains
+app.get('/api/weather', async (req, res) => {
+  try {
+    const weather = [];
+
+    // Cypress data
+    try {
+      const cypressUrl = 'https://www.cypressmountain.com/api/reportpal?resortName=cy&useReportPal=true';
+      const { data: cypressData } = await axios.get(cypressUrl);
+
+      const resortwide = cypressData?.currentConditions?.resortwide || {};
+      const baseLocation = cypressData?.currentConditions?.resortLocations?.location?.[0] || {};
+
+      weather.push({
+        name: 'Cypress Mountain',
+        snow24: parseInt(baseLocation.snow24Hours?.centimeters || '0'),
+        baseDepth: parseInt(baseLocation.base?.centimeters || '0'),
+        weatherType: cypressData?.currentConditions?.weather || 'N/A',
+        openTrails: resortwide.numTrailsOpen || 0,
+        totalTrails: resortwide.numTrailsTotal || 0,
+        openLifts: resortwide.numLiftsOpen || 0,
+        totalLifts: resortwide.numLiftsTotal || 0,
+        trailPercentageOpen: resortwide.numTrailsTotal > 0
+          ? `${Math.round((resortwide.numTrailsOpen / resortwide.numTrailsTotal) * 100)}%`
+          : '0%',
+        timeAgo: cypressData?.updated ? getTimeAgo(new Date(cypressData.updated)) : ''
+      });
+    } catch (err) {
+      console.error('Error fetching Cypress weather:', err);
+    }
+
+    // Grouse data
+    try {
+      const grouseUrl = 'https://www.grousemountain.com/current_conditions';
+      const { data: html } = await axios.get(grouseUrl);
+      const $ = cheerio.load(html);
+
+      // Extract 24hr snowfall from the stats
+      const stats24hr = $('.conditions-snow-report__stats-day li').filter((_, el) => {
+        return $(el).find('p').text().trim() === '24hrs';
+      });
+      const snow24Text = stats24hr.find('h3.metric').text().trim();
+      const snow24 = parseInt(snow24Text.replace(/\D/g, '')) || 0;
+
+      // Count open/total lifts and runs
+      const runItems = $("div#runs ul.data-table li");
+      let openRuns = 0;
+      let totalRuns = runItems.length;
+      runItems.each((_, li) => {
+        if ($(li).find("span.open").length > 0) openRuns++;
+      });
+
+      const liftItems = $("div#lifts ul.data-table li");
+      let openLifts = 0;
+      let totalLifts = liftItems.length;
+      liftItems.each((_, li) => {
+        if ($(li).find("span.open").length > 0) openLifts++;
+      });
+
+      weather.push({
+        name: 'Grouse Mountain',
+        snow24: snow24,
+        baseDepth: 0, // Grouse doesn't show base depth on conditions page
+        weatherType: 'N/A',
+        openTrails: openRuns,
+        totalTrails: totalRuns,
+        openLifts: openLifts,
+        totalLifts: totalLifts,
+        trailPercentageOpen: totalRuns > 0
+          ? `${Math.round((openRuns / totalRuns) * 100)}%`
+          : '0%',
+        timeAgo: ''
+      });
+    } catch (err) {
+      console.error('Error fetching Grouse weather:', err);
+    }
+
+    // Seymour data
+    try {
+      const seymourUrl = 'https://mtseymour.ca/the-mountain/todays-conditions-hours';
+      const { data: html } = await axios.get(seymourUrl);
+      const $ = cheerio.load(html);
+
+      // Extract snow data from circle data elements
+      const snowData = $('.snow-data li');
+      let snow24 = 0;
+      let baseDepth = 0;
+
+      snowData.each((_, li) => {
+        const $li = $(li);
+        const label = $li.find('.headline').text().trim();
+        const value = $li.find('.num').text().trim();
+
+        if (label.includes('24hr')) {
+          snow24 = parseInt(value.replace(/\D/g, '')) || 0;
+        } else if (label.includes('Base')) {
+          baseDepth = parseInt(value.replace(/\D/g, '')) || 0;
+        }
+      });
+
+      // Count lifts and trails
+      const lifts = $('tr.accordion-heading th').filter((_, el) => {
+        const text = $(el).text().trim();
+        return !text.includes('Trail') && text.length > 0 && !text.includes('Terrain');
+      });
+      const totalLifts = lifts.length;
+      let openLifts = 0;
+      $('tr.accordion-heading').each((_, row) => {
+        const status = $(row).find('td').first().text().trim();
+        if (!/closed/i.test(status) && status.length > 0) openLifts++;
+      });
+
+      // Count trails
+      const trails = $('article.node--type-trail').length;
+      let openTrails = 0;
+      $('article.node--type-trail').each((_, article) => {
+        const $article = $(article);
+        const statusOpen = $article.find('.f-icon.icon.status.status-open').length > 0;
+        if (statusOpen) openTrails++;
+      });
+
+      weather.push({
+        name: 'Mount Seymour',
+        snow24: snow24,
+        baseDepth: baseDepth,
+        weatherType: 'N/A',
+        openTrails: openTrails,
+        totalTrails: trails,
+        openLifts: openLifts,
+        totalLifts: totalLifts || 4,
+        trailPercentageOpen: trails > 0
+          ? `${Math.round((openTrails / trails) * 100)}%`
+          : '0%',
+        timeAgo: ''
+      });
+    } catch (err) {
+      console.error('Error fetching Seymour weather:', err);
+    }
+
+    res.json({ weather });
+  } catch (err) {
+    console.error('Error in /api/weather:', err);
+    res.status(500).json({ error: 'Failed to fetch weather data', weather: [] });
+  }
+});
+
+// Helper function to calculate time ago
+function getTimeAgo(date) {
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+  if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+  if (diffMins > 0) return `${diffMins} min${diffMins > 1 ? 's' : ''}`;
+  return 'Just now';
+}
 
 app.use('/api', appRoutes);
 
