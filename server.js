@@ -580,14 +580,135 @@ async function scrapeImagesFromSnowForecast() {
 }
 scrapeImagesFromSnowForecast().then(urls => console.log('Found images:', urls));
 
+// NEW: Scraper function for snow-forecast.com
+async function scrapeSnowForecast(resortName, elevation) {
+  const url = `https://www.snow-forecast.com/resorts/${resortName}/6day/${elevation}`;
+  try {
+    const { data: html } = await axios.get(url);
+    const $ = cheerio.load(html);
+
+    // Extract forecast data from the table
+    const data = {
+      snowBlocks: [],
+      rainBlocks: [],
+      temperatureBlocks: [],
+      windBlocks: [],
+      freezinglevelBlocks: [],
+      phrasesBlocks: []
+    };
+
+    // Find all forecast table rows
+    const forecastTable = $('.forecast-table');
+
+    // Extract 7 days of data (each day has 3 periods: morning, afternoon, night)
+    for (let day = 0; day < 7; day++) {
+      const dayColumn = day + 1; // Skip the label column
+
+      // Get snow data
+      const snowRow = forecastTable.find('tr[data-row="snow"]').first();
+      const snowCells = snowRow.find('td').slice(day * 3, day * 3 + 3);
+      const snowVals = snowCells.map((_, el) => {
+        const text = $(el).text().trim();
+        return text === '—' || text === '-' || text === '' ? 0 : parseFloat(text) || 0;
+      }).get();
+      data.snowBlocks.push(snowVals.length === 3 ? snowVals : [0, 0, 0]);
+
+      // Get rain data
+      const rainRow = forecastTable.find('tr[data-row="rain"]').first();
+      const rainCells = rainRow.find('td').slice(day * 3, day * 3 + 3);
+      const rainVals = rainCells.map((_, el) => {
+        const text = $(el).text().trim();
+        return text === '—' || text === '-' || text === '' ? 0 : parseFloat(text) || 0;
+      }).get();
+      data.rainBlocks.push(rainVals.length === 3 ? rainVals : [0, 0, 0]);
+
+      // Get temperature data (use max temperature)
+      const tempRow = forecastTable.find('tr[data-row="temperature-max"]').first();
+      const tempCells = tempRow.find('td').slice(day * 3, day * 3 + 3);
+      const tempVals = tempCells.map((_, el) => {
+        const text = $(el).text().trim();
+        return text === '—' || text === '-' || text === '' ? 0 : parseFloat(text) || 0;
+      }).get();
+      data.temperatureBlocks.push(tempVals.length === 3 ? tempVals : [0, 0, 0]);
+
+      // Get wind data (extract speed from SVG data-speed attribute)
+      const windRow = forecastTable.find('tr[data-row="wind"]').first();
+      const windCells = windRow.find('td').slice(day * 3, day * 3 + 3);
+      const windVals = windCells.map((_, el) => {
+        const windIcon = $(el).find('.wind-icon');
+        const speed = windIcon.attr('data-speed');
+        return speed ? parseFloat(speed) : 0;
+      }).get();
+      data.windBlocks.push(windVals.length === 3 ? windVals : [0, 0, 0]);
+
+      // Get freezing level
+      const freezeRow = forecastTable.find('tr[data-row="freezing-level"]').first();
+      const freezeCells = freezeRow.find('td').slice(day * 3, day * 3 + 3);
+      const freezeVals = freezeCells.map((_, el) => {
+        const text = $(el).text().trim();
+        return text === '—' || text === '-' || text === '' ? 0 : parseFloat(text) || 0;
+      }).get();
+      data.freezinglevelBlocks.push(freezeVals.length === 3 ? freezeVals : [0, 0, 0]);
+
+      // Get weather phrases (from phrases row)
+      const phraseRow = forecastTable.find('tr[data-row="phrases"]').first();
+      const phraseCells = phraseRow.find('td').slice(day * 3, day * 3 + 3);
+      const phraseVals = phraseCells.map((_, el) => {
+        const phrase = $(el).find('.forecast-table__phrase').text().trim();
+        return phrase || 'clear';
+      }).get();
+      data.phrasesBlocks.push(phraseVals.length === 3 ? phraseVals : ['', '', '']);
+    }
+
+    return { data };
+  } catch (err) {
+    console.error(`Error scraping ${resortName} ${elevation}:`, err.message);
+    // Return empty data structure on error
+    return {
+      data: {
+        snowBlocks: Array(7).fill([0, 0, 0]),
+        rainBlocks: Array(7).fill([0, 0, 0]),
+        temperatureBlocks: Array(7).fill([0, 0, 0]),
+        windBlocks: Array(7).fill([0, 0, 0]),
+        freezinglevelBlocks: Array(7).fill([0, 0, 0]),
+        phrasesBlocks: Array(7).fill(['', '', ''])
+      }
+    };
+  }
+}
+
 app.get('/api/forecast', async (req, res) => {
   try {
-    // 1) Fetch all three forecast datasets concurrently.
-    const [botData, midData, topData] = await Promise.all([
-      fetch('https://snow-scraper.azurewebsites.net/bot').then(r => r.json()),
-      fetch('https://snow-scraper.azurewebsites.net/mid').then(r => r.json()),
-      fetch('https://snow-scraper.azurewebsites.net/top').then(r => r.json())
-    ]);
+    // Resort name mappings for snow-forecast.com URLs
+    const resortMappings = {
+      'Cypress-Mountain': 'Cypress-Mountain',
+      'Grouse-Mountain': 'Grouse-Mountain',
+      'Mount-Seymour': 'Mount-Seymour'
+    };
+
+    // Scrape data for all resorts and elevations
+    const resortNames = Object.keys(resortMappings);
+    const elevations = ['bot', 'mid', 'top'];
+
+    // Build resorts array structure to match old Azure format
+    const botData = { resorts: [] };
+    const midData = { resorts: [] };
+    const topData = { resorts: [] };
+
+    // Scrape all resorts
+    for (const resortKey of resortNames) {
+      const resortName = resortMappings[resortKey];
+
+      const [botResort, midResort, topResort] = await Promise.all([
+        scrapeSnowForecast(resortName, 'bot'),
+        scrapeSnowForecast(resortName, 'mid'),
+        scrapeSnowForecast(resortName, 'top')
+      ]);
+
+      botData.resorts.push(botResort);
+      midData.resorts.push(midResort);
+      topData.resorts.push(topResort);
+    }
 
     // 2) Ensure each contains a resorts array.
     if (!botData.resorts || !midData.resorts || !topData.resorts) {
@@ -596,9 +717,9 @@ app.get('/api/forecast', async (req, res) => {
 
     // 3) Mapping of resort names to their index in the resorts array
     const resortIndices = {
-      "Cypress-Mountain": 3,
-      "Grouse-Mountain": 6,
-      "Mount-Seymour": 15  // verify that index 15 is correct for your data
+      "Cypress-Mountain": 0,
+      "Grouse-Mountain": 1,
+      "Mount-Seymour": 2
     };
 
     // 4) Transform raw arrays => { morning, afternoon, night }
@@ -825,6 +946,11 @@ app.get('/api/cypress-bike', async (_req, res) => {
     });
   }
 });
+// Grouse bike scraper function (placeholder - implement if needed)
+async function scrapeGrouseBike() {
+  return { trails: [] };
+}
+
 app.get('/api/grouse-bike',   async (_,res)=>res.json(await scrapeGrouseBike()));
 app.get('/api/seymour-bike-status', async (_, res) => {
   const result = await scrapeSeymourBike();   // { ok, trails, error? }
@@ -855,12 +981,19 @@ async function startServer() {
     console.log(`Server listening on http://localhost:${PORT}`);
   });
 }
-startServer();
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
 
 // Optional debug logs on startup.
 (async () => {
-  console.log("Grouse Lifts (on startup):", await scrapeGrouseRuns());
-  console.log("Cypress Lifts (on startup):", await scrapeCypressLifts());
-  console.log("Seymour Lifts (on startup):", await scrapeSeymourLifts());
+  try {
+    console.log("Grouse Lifts (on startup):", await scrapeGrouseRuns());
+    console.log("Cypress Lifts (on startup):", await scrapeCypressLifts());
+    console.log("Seymour Lifts (on startup):", await scrapeSeymourLifts());
+  } catch (err) {
+    console.error('Error running startup scrapers:', err);
+  }
 })();
 

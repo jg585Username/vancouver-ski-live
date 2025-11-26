@@ -5,7 +5,22 @@
       "Bash(cat:*)",
       "Bash(where:*)",
       "Bash(cmd.exe /c \"where node\")",
-      "WebFetch(domain:whistlerpeak.com)"
+      "WebFetch(domain:whistlerpeak.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:skibc.tech)",
+      "WebFetch(domain:snow-scraper.azurewebsites.net)",
+      "Bash(dir:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.snow-forecast.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(cmd.exe /c \"npm start\")",
+      "Bash(cmd.exe /c \"node server.js\")",
+      "Bash(cmd.exe /c \"node test-scraper.js\")",
+      "Bash(node:*)",
+      "Bash(cmd.exe /c \"node test-server-start.js\")",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []
