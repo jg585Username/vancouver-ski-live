@@ -650,74 +650,97 @@
                 height: 24px;
             }
         }
-        /* Bike-trail cards */
+        /* Compact Bike-trail section */
+        .bike-panel-compact {
+            padding: 1.5rem !important;
+        }
+
+        .bike-panel-compact h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .bike-tab-compact-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .bike-tab-compact {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .bike-tab-compact:hover {
+            background: rgba(0, 168, 232, 0.2);
+            border-color: rgba(0, 168, 232, 0.5);
+            color: #fff;
+        }
+
+        .bike-tab-compact.active {
+            background: rgba(0, 168, 232, 0.3);
+            border-color: #00a8e8;
+            color: #fff;
+        }
+
         .trail-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
         }
 
         .trail-box {
-            background: linear-gradient(135deg, var(--color-bg-darker) 0%, var(--color-bg-card) 100%);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            transition: all var(--transition-speed) ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .trail-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, var(--color-brand), transparent);
-            opacity: 0;
-            transition: opacity var(--transition-speed) ease;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            text-align: center;
         }
 
         .trail-box:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 8px 16px rgba(0, 168, 232, 0.2);
-            border-color: var(--color-brand);
-        }
-
-        .trail-box:hover::before {
-            opacity: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 168, 232, 0.5);
+            transform: translateY(-2px);
         }
 
         .trail-box h3 {
-            margin: 0 0 0.75rem;
-            font-size: 1.15rem;
-            text-align: center;
-            color: var(--color-text-primary);
+            margin: 0 0 0.5rem;
+            font-size: 0.9rem;
+            color: #fff;
+            font-weight: 600;
         }
 
         .trail-status {
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-align: center;
-            padding: 0.5rem;
-            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
         }
 
         .trail-status.open {
-            color: var(--color-success);
-            background: rgba(63, 185, 80, 0.1);
+            color: #3fb950;
+            background: rgba(63, 185, 80, 0.15);
         }
 
         .trail-status.closed {
-            color: var(--color-danger);
-            background: rgba(248, 81, 73, 0.1);
+            color: #f85149;
+            background: rgba(248, 81, 73, 0.15);
         }
 
         .trail-status.partial {
-            color: var(--color-warning);
-            background: rgba(210, 153, 34, 0.1);
+            color: #d29922;
+            background: rgba(210, 153, 34, 0.15);
         }
 
         /* ================ TAB NAVIGATION ================ */
@@ -900,39 +923,6 @@
         </div>
     </div>
 
-    <!-- BIKE-TRAILS PANEL WITH TABS -->
-    <div class="translucent-panel" id="bike-panel">
-        <h1>Mountain Bike Trail Status</h1>
-        <p class="subtitle">View real-time trail conditions and status</p>
-
-        <!-- Tab Navigation -->
-        <div class="tab-container">
-            <button class="tab-button bike-tab active" data-mountain="cypress">
-                <img src="images/cypress_logo.svg" alt="Cypress"/>
-                Cypress
-            </button>
-            <button class="tab-button bike-tab" data-mountain="grouse">
-                <img src="images/grouse_logo.svg" alt="Grouse"/>
-                Grouse
-            </button>
-            <button class="tab-button bike-tab" data-mountain="seymour">
-                <img src="images/seymour_logo.svg" alt="Seymour"/>
-                Seymour
-            </button>
-        </div>
-
-        <!-- Tab Content Areas -->
-        <div id="bike-cypress" class="tab-content active">
-            <div class="loading-spinner">Loading Cypress bike trails</div>
-        </div>
-        <div id="bike-grouse" class="tab-content">
-            <div class="loading-spinner">Loading Grouse bike trails</div>
-        </div>
-        <div id="bike-seymour" class="tab-content">
-            <div class="loading-spinner">Loading Seymour bike trails</div>
-        </div>
-    </div>
-
     <!-- Operational Updates Panel -->
     <div class="translucent-panel">
         <div class="update-nav" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
@@ -1030,28 +1020,6 @@
             }
         }
 
-        // Bike tab switching
-        document.querySelectorAll('.bike-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const mountain = this.dataset.mountain;
-
-                // Update active tab
-                document.querySelectorAll('.bike-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-
-                // Update active content
-                document.querySelectorAll('[id^="bike-"]').forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(`bike-${mountain}`).classList.add('active');
-
-                // Load data if not already loaded
-                loadBikeTrails(mountain);
-            });
-        });
-
-        // Load first tab on page load
-        loadBikeTrails('cypress');
 
         // Array holding each mountain's name and API endpoint.
         const mountains = [
@@ -1173,6 +1141,29 @@
 
         <div id="chartContainer">
             <canvas id="lineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- BIKE-TRAILS PANEL WITH TABS (COMPACT) -->
+    <div class="translucent-panel bike-panel-compact">
+        <h2>Mountain Bike Trail Status</h2>
+
+        <!-- Compact Tab Navigation -->
+        <div class="bike-tab-compact-nav">
+            <button class="bike-tab-compact active" data-mountain="cypress">Cypress</button>
+            <button class="bike-tab-compact" data-mountain="grouse">Grouse</button>
+            <button class="bike-tab-compact" data-mountain="seymour">Seymour</button>
+        </div>
+
+        <!-- Tab Content Areas -->
+        <div id="bike-cypress" class="tab-content active">
+            <div class="loading-spinner">Loading Cypress bike trails</div>
+        </div>
+        <div id="bike-grouse" class="tab-content">
+            <div class="loading-spinner">Loading Grouse bike trails</div>
+        </div>
+        <div id="bike-seymour" class="tab-content">
+            <div class="loading-spinner">Loading Seymour bike trails</div>
         </div>
     </div>
 </main>
@@ -1631,6 +1622,29 @@
         document.getElementById('ageRangeSelect').addEventListener('change', () => {
             initLiftTicketPriceChart();
         });
+
+        // 3) Bike tab switching (compact version)
+        document.querySelectorAll('.bike-tab-compact').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const mountain = this.dataset.mountain;
+
+                // Update active tab
+                document.querySelectorAll('.bike-tab-compact').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // Update active content
+                document.querySelectorAll('[id^="bike-"]').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`bike-${mountain}`).classList.add('active');
+
+                // Load data if not already loaded
+                loadBikeTrails(mountain);
+            });
+        });
+
+        // Load first bike tab on page load
+        loadBikeTrails('cypress');
     });
     function initLiftTicketPriceChart() {
         const ageRange = document.getElementById('ageRangeSelect').value;
