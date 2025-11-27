@@ -4,23 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ski Vancouver - Real-time Mountain Conditions</title>
-    <link rel="icon" href="images/ai_generated_logo.png" type="images/ai_generated_logo.png">
+    <link rel="icon" href="images/ai_generated_logo.png" type="image/png">
     <style>
-        /* CSS Variables - Whistler Peak Inspired */
+        /* CSS Variables */
         :root {
             --color-brand: #00a8e8;
-            --color-brand-dark: #0077b6;
-            --color-bg-dark: #0d1117;
-            --color-bg-darker: #010409;
-            --color-bg-card: #161b22;
-            --color-text-primary: #f0f6fc;
-            --color-text-secondary: #8b949e;
-            --color-border: #30363d;
+            --color-brand-dark: #0077aa;
+            --color-bg-darker: rgba(20, 30, 40, 0.8);
+            --color-bg-card: rgba(40, 50, 60, 0.75);
+            --color-border: rgba(255, 255, 255, 0.2);
+            --color-text-primary: #fff;
+            --color-text-secondary: #ddd;
             --color-success: #3fb950;
             --color-danger: #f85149;
             --color-warning: #d29922;
             --transition-speed: 0.3s;
-            --sidebar-width: 280px;
         }
 
         /* General Reset */
@@ -35,163 +33,42 @@
             scroll-behavior: smooth;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--color-bg-dark);
-            color: var(--color-text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* ================ HAMBURGER SIDEBAR NAVIGATION ================ */
-        .hamburger-btn {
-            position: fixed;
-            top: 1.5rem;
-            left: 1.5rem;
-            z-index: 2000;
-            background: var(--color-bg-card);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            width: 50px;
-            height: 50px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-            transition: all var(--transition-speed) ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .hamburger-btn:hover {
-            background: var(--color-brand);
-            transform: scale(1.05);
-        }
-
-        .hamburger-btn span {
-            display: block;
-            width: 25px;
-            height: 3px;
-            background: var(--color-text-primary);
-            border-radius: 2px;
-            transition: all var(--transition-speed) ease;
-        }
-
-        #sidebar-toggle {
-            display: none;
-        }
-
-        #sidebar-toggle:checked ~ .hamburger-btn span:nth-child(1) {
-            transform: translateY(8px) rotate(45deg);
-        }
-
-        #sidebar-toggle:checked ~ .hamburger-btn span:nth-child(2) {
-            opacity: 0;
-        }
-
-        #sidebar-toggle:checked ~ .hamburger-btn span:nth-child(3) {
-            transform: translateY(-8px) rotate(-45deg);
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: var(--color-bg-darker);
-            border-right: 1px solid var(--color-border);
-            transform: translateX(-100%);
-            transition: transform var(--transition-speed) ease;
-            z-index: 1500;
-            overflow-y: auto;
-            padding: 5rem 0 2rem;
-        }
-
-        #sidebar-toggle:checked ~ .sidebar {
-            transform: translateX(0);
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+        html, body {
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            opacity: 0;
-            visibility: hidden;
-            transition: all var(--transition-speed) ease;
-            z-index: 1400;
         }
 
-        #sidebar-toggle:checked ~ .sidebar-overlay {
-            opacity: 1;
-            visibility: visible;
+        body {
+            font-family: "Proxima Nova", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: url("images/IMG_4922.jpeg") no-repeat center center fixed;
+            background-size: cover;
+            background-color: #333;
+            color: #fff;
+            line-height: 1.6;
         }
 
-        .sidebar-nav {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar-nav li {
-            margin: 0;
-        }
-
-        .sidebar-nav a {
+        /* ================ NAV BAR  ================ */
+        header {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 0.5rem 1rem;
             display: flex;
             align-items: center;
-            padding: 1rem 2rem;
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 1.1rem;
-            font-weight: 500;
-            transition: all var(--transition-speed) ease;
-            border-left: 3px solid transparent;
-        }
-
-        .sidebar-nav a:hover,
-        .sidebar-nav a.active {
-            color: var(--color-brand);
-            background: rgba(0, 168, 232, 0.1);
-            border-left-color: var(--color-brand);
-            transform: translateX(5px);
-        }
-
-        .sidebar-nav a::before {
-            content: '❯';
-            margin-right: 1rem;
-            opacity: 0;
-            transform: translateX(-10px);
-            transition: all var(--transition-speed) ease;
-        }
-
-        .sidebar-nav a:hover::before {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .site-title {
+            justify-content: space-between;
             position: fixed;
-            top: 1.5rem;
-            right: 2rem;
-            z-index: 1100;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--color-brand);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .navbar-brand {
+            font-size: 1.3rem;
+            font-weight: bold;
             letter-spacing: 1px;
         }
-
-        .site-title .snowflake {
+        .navbar-brand .snowflake {
             display: inline-block;
             animation: spinIn 1s ease-out;
         }
-
         @keyframes spinIn {
             from {
                 opacity: 0;
@@ -202,64 +79,101 @@
                 transform: rotate(0deg);
             }
         }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+            margin: 0;
+        }
+        nav a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        nav a:hover {
+            transform: translateY(-2px);
+            color: #00a8e8;
+        }
+        nav a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            height: 2px;
+            width: 0%;
+            background-color: #00a8e8;
+            transition: width 0.3s ease-in-out;
+        }
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 0.75rem;
+                font-size: 0.9rem;
+            }
+            nav a {
+                font-size: 0.85rem;
+            }
+        }
 
         /* ================ MAIN CONTENT  ================ */
         main {
-            padding: 2rem 1rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            animation: fadeInUp 0.6s ease-out;
+            margin-top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 2rem;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .content-panel {
-            background: var(--color-bg-card);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
+        .translucent-panel {
+            max-width: 1200px;
+            width: 90%;
+            background-color: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(10px);
+            color: #fff;
             padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
             margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            transition: all var(--transition-speed) ease;
+            transition: all 0.3s ease;
         }
 
-        .content-panel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
-            border-color: var(--color-brand);
+        .translucent-panel:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
-            color: var(--color-text-primary);
+            color: #fff;
             margin-bottom: 0.5rem;
             text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         h2 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 600;
-            color: var(--color-text-primary);
+            color: #fff;
             margin-bottom: 1rem;
             text-align: center;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
 
         .subtitle {
             text-align: center;
-            font-size: 0.95rem;
-            color: var(--color-text-secondary);
+            font-size: 1rem;
+            color: #ddd;
             margin: 0 0 1.5rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         /* ================ WEBCAMS / LIVE IMAGES ================ */
@@ -635,7 +549,7 @@
                 padding: 1rem 0.5rem;
             }
 
-            .content-panel {
+            .translucent-panel {
                 padding: 1.5rem;
                 margin-bottom: 1.5rem;
             }
@@ -878,32 +792,25 @@
 </head>
 <body>
 
-<!-- Hamburger Sidebar Navigation -->
-<input type="checkbox" id="sidebar-toggle" />
-<label for="sidebar-toggle" class="hamburger-btn">
-    <span></span>
-    <span></span>
-    <span></span>
-</label>
-<div class="sidebar-overlay" onclick="document.getElementById('sidebar-toggle').checked = false"></div>
-<nav class="sidebar">
-    <ul class="sidebar-nav">
-        <li><a href="index.html" class="active">🏠 Home</a></li>
-        <li><a href="weather.html">🌨️ Weather & Forecast</a></li>
-        <li><a href="webcams.html">📹 Live Webcams</a></li>
-        <li><a href="traffic.html">🚗 Highway Traffic</a></li>
-        <li><a href="videos.html">🎥 Videos</a></li>
-        <li><a href="about.html">ℹ️ About</a></li>
-    </ul>
-</nav>
-
-<!-- Site Title -->
-<div class="site-title">SKI VANC<span class="snowflake">❅</span>UVER</div>
+<!-- Header Navigation -->
+<header>
+    <div class="navbar-brand">SKI VANC<span class="snowflake">❅</span>UVER</div>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="weather.html">Weather</a></li>
+            <li><a href="webcams.html">Webcams</a></li>
+            <li><a href="traffic.html">Traffic</a></li>
+            <li><a href="videos.html">Videos</a></li>
+            <li><a href="about.html">About</a></li>
+        </ul>
+    </nav>
+</header>
 
 <main>
 
     <!-- ================ WEBCAMS / LIVE IMAGES ================ -->
-    <div class="content-panel">
+    <div class="translucent-panel">
         <h2>Live Mountain Images</h2>
         <div class="webcam-gallery">
             <!-- Image 1: Mystery Peak (Mt Seymour) -->
@@ -956,7 +863,7 @@
     </div>
 
     <!-- BIKE-TRAILS PANEL WITH TABS -->
-    <div class="content-panel" id="bike-panel">
+    <div class="translucent-panel" id="bike-panel">
         <h1>Mountain Bike Trail Status</h1>
         <p class="subtitle">View real-time trail conditions and status</p>
 
@@ -989,7 +896,7 @@
     </div>
 
     <!-- Operational Updates Panel -->
-    <div class="content-panel">
+    <div class="translucent-panel">
         <div class="update-nav" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
             <button id="left-arrow" aria-label="Previous Mountain" style="background: var(--color-bg-darker); border: 1px solid var(--color-border); border-radius: 8px; padding: 0.75rem; font-size: 1.5rem; color: var(--color-brand); cursor: pointer; transition: all 0.3s ease;">&#9664;</button>
             <h2 id="mountain-name" style="margin: 0; flex: 1;">Cypress Updates</h2>
@@ -1175,7 +1082,7 @@
     </script>
 
     <!-- Lifts Panel WITH TABS -->
-    <div class="content-panel">
+    <div class="translucent-panel">
         <h1>Ski Lift & Run Status</h1>
         <p class="subtitle">
             Real-time lift operations and run conditions - Click runs for detailed status
@@ -1210,13 +1117,13 @@
     </div>
 
     <!-- Weather & Snow Panel -->
-    <div class="content-panel">
+    <div class="translucent-panel">
         <h2>Mountain Conditions</h2>
         <div id="weatherContainer"></div>
     </div>
 
     <!-- Lift Ticket Price Analysis Panel -->
-    <div class="content-panel" id="ticketPricePanel">
+    <div class="translucent-panel" id="ticketPricePanel">
         <h2>Lift Ticket Price Analysis</h2>
         <p class="subtitle">
            Reference Prices for 25/26 Season<br>
