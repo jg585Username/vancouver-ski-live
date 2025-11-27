@@ -431,59 +431,89 @@
             height: auto;
         }
 
-        /* ================ WEATHER TABLE ================ */
+        /* ================ MOUNTAIN CONDITIONS TABLE ================ */
         .weather-table-wrapper {
             margin-top: 1rem;
             overflow-x: auto;
         }
+
         .weather-table {
             border-collapse: separate;
             border-spacing: 0 12px;
             width: 100%;
             font-size: 1rem;
         }
+
         .weather-table thead tr {
-            background-color: rgba(0,0,0,0.3);
+            background-color: transparent;
         }
+
         .weather-table th {
             text-align: left;
             font-weight: 600;
             padding: 8px 12px;
             white-space: nowrap;
             color: #fff;
+            font-family: "Proxima Nova", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
         .weather-table tbody tr {
-            background-color: #fff;
-            color: #333;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #2c3e50;
             border-radius: 8px;
+            transition: all 0.3s ease;
         }
+
+        .weather-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
         .weather-table td {
             padding: 12px;
             vertical-align: middle;
+            font-family: "Proxima Nova", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
         .weather-table tbody tr td:first-child {
             border-top-left-radius: 8px;
             border-bottom-left-radius: 8px;
         }
+
         .weather-table tbody tr td:last-child {
             border-top-right-radius: 8px;
             border-bottom-right-radius: 8px;
         }
+
         .big-number {
             font-weight: 600;
             font-size: 1.1rem;
             color: #2c3e50;
         }
+
         .resort-name {
             font-size: 1.1rem;
             font-weight: 600;
             color: #2c3e50;
             display: block;
         }
+
         .time-ago {
             font-size: 0.85rem;
             color: #677a8c;
             margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .weather-table {
+                font-size: 0.9rem;
+            }
+
+            .weather-table th,
+            .weather-table td {
+                padding: 8px 6px;
+            }
         }
 
         /* Chart Container */
@@ -862,6 +892,14 @@
         </div>
     </div>
 
+    <!-- Mountain Conditions Panel -->
+    <div class="translucent-panel">
+        <h2>Mountain Conditions</h2>
+        <div id="weatherContainer">
+            <div class="loading-spinner">Loading mountain conditions</div>
+        </div>
+    </div>
+
     <!-- BIKE-TRAILS PANEL WITH TABS -->
     <div class="translucent-panel" id="bike-panel">
         <h1>Mountain Bike Trail Status</h1>
@@ -1114,12 +1152,6 @@
         <div id="lift-seymour" class="tab-content">
             <div class="loading-spinner">Loading Seymour lifts</div>
         </div>
-    </div>
-
-    <!-- Weather & Snow Panel -->
-    <div class="translucent-panel">
-        <h2>Mountain Conditions</h2>
-        <div id="weatherContainer"></div>
     </div>
 
     <!-- Lift Ticket Price Analysis Panel -->
@@ -1484,7 +1516,6 @@
         const tbody = document.createElement('tbody');
 
         filtered.forEach(resort => {
-
             if (resort.name.toLowerCase().includes('seymour')) {
                 resort.totalLifts = 4;
             }
