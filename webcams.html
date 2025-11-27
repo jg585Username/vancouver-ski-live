@@ -5,21 +5,41 @@
     <title>Webcams - Ski Vancouver Status</title>
     <link rel="icon" href="images/ai_generated_logo.png" type="images/ai_generated_logo.png">
     <style>
+        /* CSS Variables */
+        :root {
+            --color-brand: #00a8e8;
+            --color-brand-dark: #0077aa;
+            --color-bg-darker: rgba(20, 30, 40, 0.8);
+            --color-bg-card: rgba(40, 50, 60, 0.75);
+            --color-border: rgba(255, 255, 255, 0.2);
+            --color-text-primary: #fff;
+            --color-text-secondary: #ddd;
+            --transition-speed: 0.3s;
+        }
+
         /* General Reset */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
         html, body {
             height: 100%;
         }
+
         body {
-            font-family: Proxima Nova, sans-serif;
-            background: url("images/cypress_powder.jpeg") no-repeat center center fixed;
-            background-size: cover; /* Cover entire screen */
-            background-color: #333;  /* fallback */
+            font-family: "Proxima Nova", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: url("images/IMG_4922.jpeg") no-repeat center center fixed;
+            background-size: cover;
+            background-color: #333;
             color: #fff;
+            line-height: 1.6;
         }
 
         /* ================ NAV BAR  ================ */
@@ -34,32 +54,46 @@
             width: 100%;
             top: 0;
             z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .navbar-brand {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .navbar-brand .snowflake {
+            display: inline-block;
+            animation: spinIn 1s ease-out;
+        }
+        @keyframes spinIn {
+            from {
+                opacity: 0;
+                transform: rotate(-180deg);
+            }
+            to {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
         }
         nav ul {
             list-style: none;
             display: flex;
             gap: 1.5rem;
+            margin: 0;
         }
         nav a {
             text-decoration: none;
             color: #fff;
             font-size: 1rem;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
             position: relative;
             display: inline-block;
             cursor: pointer;
         }
         nav a:hover {
-            display: inline-block;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            transform: rotate(2deg);
-            color: #ddd;
+            transform: translateY(-2px);
+            color: #00a8e8;
         }
-
         nav a::after {
             content: "";
             position: absolute;
@@ -67,7 +101,7 @@
             bottom: -2px;
             height: 2px;
             width: 0%;
-            background-color: currentColor;
+            background-color: #00a8e8;
             transition: width 0.3s ease-in-out;
         }
         nav a:hover::after {
@@ -76,39 +110,81 @@
 
         /* ================ MAIN CONTENT  ================ */
         main {
-            margin-top: 80px; /* space below fixed header */
+            margin-top: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding-bottom: 2rem;
         }
+
         .translucent-panel {
-            max-width: 900px;
+            max-width: 1200px;
             width: 90%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(10px);
             color: #fff;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
             margin-bottom: 2rem;
-        }
-        h1, h2 {
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .subtitle {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #ccc;
-            margin: 0.5rem 0 1.5rem;
+            transition: all 0.3s ease;
         }
 
-        /* webcam */
+        .translucent-panel:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 1rem;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        h3 {
+            text-align: center;
+            font-size: 1rem;
+            color: #ddd;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+
+        /* webcam gallery */
+        .webcam-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
         .webcam-gallery img {
+            width: 180px;
+            height: 180px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             flex-shrink: 0;
-            cursor: pointer; /* Indicate it's clickable */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .webcam-gallery img:hover {
+            transform: scale(1.1);
+            border-color: #00a8e8;
+            box-shadow: 0 8px 20px rgba(0, 168, 232, 0.4);
         }
 
         /* ================ LIGHTBOX OVERLAY ================ */
@@ -142,15 +218,15 @@
 <body>
 
 <header>
-    <div class="navbar-brand">SKI VANC❅UVER</div>
+    <div class="navbar-brand">SKI VANC<span class="snowflake">❅</span>UVER</div>
     <nav>
         <ul>
-            <li><a href="index.html">HOME</a></li>
-            <li><a href="weather.html">WEATHER</a></li>
-            <li><a href="webcams.html">WEBCAMS</a></li>
-            <li><a href="traffic.html">TRAFFIC</a></li>
-            <li><a href="about.html">ABOUT</a></li>
-            <li><a href="videos.html">VIDEOS</a></li>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="weather.html">Weather</a></li>
+            <li><a href="webcams.html">Webcams</a></li>
+            <li><a href="traffic.html">Traffic</a></li>
+            <li><a href="videos.html">Videos</a></li>
+            <li><a href="about.html">About</a></li>
         </ul>
     </nav>
 </header>
