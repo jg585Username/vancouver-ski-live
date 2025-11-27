@@ -20,7 +20,10 @@
       "Bash(cmd.exe /c \"node test-scraper.js\")",
       "Bash(node:*)",
       "Bash(cmd.exe /c \"node test-server-start.js\")",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(for file in weather.html webcams.html traffic.html videos.html about.html)",
+      "Bash(do sed -i 's/\\.navbar-brand {$/&\\n            color: #00a8e8;/; t; s/letter-spacing: 1px;$/&\\n            color: #00a8e8;/' \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
